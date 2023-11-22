@@ -1,20 +1,7 @@
 \documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage{titlesec}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{tikz}
-
-%\setlength{\parindent}{0em}
-
-\titleformat{\section}
-{\normalfont\fontsize{12}{15}\bfseries}{\thesection}{1em}{}
-
-\titleformat{\subsection}
-  {\normalfont\fontsize{10}{15}}{\thesubsection}{1em}{}
-
-\usepackage[style=ieee, sorting=ynt, doi=false,isbn=false,url=false,eprint=false, defernumbers=true]{biblatex}
-\addbibresource{papers.bib}
-\AtBeginBibliography{\small}
 
 \title{Codec Classifier}
 \date{November 17, 2023}
@@ -83,5 +70,37 @@ The parameters in the proposed decoder are the indexes in the selection operator
 We note that not all bit patterns need to be tested in the arrays.  For example, an all-zero or all-one array does not help with classification.  Similarly, an array in which the output bit is controlled by one or a few bits in the input word could produce the same output using fewer input bits.  Taking this into consideration only reduces the total number of possiblities by about half, which is not a significant savings.
 
 We propose a greedy approach to optimizing the selective arrays following concepts from building classification trees.  Randomly select a set of bits from the word at the layer input.  Due to the binary nature of the bits, only one splitting point need be considered, $t=0.5$.  Evaluating whether this is a good variable for splitting, calculate the mutual information instead of entropy or Gini index as are commonly used in classification trees.  The mutual information may be evaluated between the class labels $y$ or the data vectors $x$ themselves and the output bits from the split in question.  After selecting a variable for ``splitting'', the dataset is divided and more splits are considered on the next level.  These trees may be grown either sequentially or in parallel.  Note that this architecture leads to a deep network of trees which we call a deep tree network (DTN).
+
+\section{Metrics: Bayes Error}
+
+This section explores Bayes error as a metric for designing coders or decoders for classification.  The Bayes error is the lowest error that can be achieved by any classifier for a classification problem.  Let $f_i = f(x|i)$ be the conditional probability of observing $x$ given that the class is $i$, and let $p_i$ be the priori probability of class $i$.  Then $p_if_i$ is proportional to the posterior probability of $i$ given $x$.  An optimal classifier uses the rule $\hat{i} = \arg\max_i p_i f_i$.  The error associated with this classifer (i.e. the Bayes error) may be computed as
+\begin{gather*}
+{\cal E} = \int_{p_1 f_1 \leq p_2 f_2} p_1 f_1 dx + \int_{p_1 f_1 \geq p_2 f_2} p_2 f_2 dx. 
+\end{gather*}
+To simplify the notation, let's define the following shorthand
+\begin{gather*}
+\int_\leq = \int_{p_1 f_1 \leq p_2 f_2} dx, \qquad \int_\geq = \int_{p_1 f_1 \geq p_2 f_2} dx
+\end{gather*}
+so that the Bayes error may be written as
+\begin{gather*}
+{\cal E} = \int_\leq p_1 f_1 + \int_\geq p_2 f_2.
+\end{gather*}
+Then
+\begin{align*}
+{\cal E} &= \int_\leq p_1 f_1 + \int_\geq p_2 f_2 \\
+&= \frac{1}{2} \left( \int_\leq p_1 f_1 + \int_\geq p_2 f_2 + \int_\leq p_1 f_1 + \int_\geq p_2 f_2 \right) \\
+&= \frac{1}{2} \left( \int_\leq p_1 f_1 + \int_\geq p_1 f_1 + \int_\geq p_2 f_2 + \int_\leq p_2f_2 + \int_\leq (p_1 f_1 - p_2f_2) + \int_\geq (- p_1 f_1 + p_2 f_2) \right) \\
+&= \frac{1}{2} \left( \int (p_1 f_1 + p_2 f_2) + \int_\leq (p_1 f_1 - p_2f_2) + \int_\geq (- p_1 f_1 + p_2 f_2) \right) \\
+&= \frac{1}{2} \left( \int (p_1 f_1 + p_2 f_2) - |p_1 f_1 - p_2f_2| \right) \\
+&= \int p_2 f_2 - \int p_2 f_2 + \frac{1}{2} \left( \int (p_1 f_1 + p_2 f_2) - |p_1 f_1 - p_2f_2| \right) \\
+&= p_2 + \frac{1}{2} \left( \int (p_1 f_1 - p_2 f_2) - |p_1 f_1 - p_2f_2| \right) \\
+&= \min(p_1,p_2) + \max(p_2-p_1,0) - \frac{1}{2} \left( \int f_2 \left[\left(p_2 - p_1 \frac{f_1}{f_2}\right) + \left|p_2 - p_1\frac{f_1}{f_2}\right| \right]\right) \\
+&= \min(p_1,p_2) - \int f_2t\left(\frac{f_1}{f_2}\right), \\
+&= \min(p_1,p_2) - E_{f_2} t\left(\frac{f_1(X)}{f_2(X)}\right) \\
+t(x) &= \frac{1}{2} \left[ (p_2-p_1 x) + |p_2 - p_1 x|\right] - \max(p_2-p_1,0) \\
+&= \max(p_2-p_1x,0) - \max(p_2-p_1,0).
+\end{align*}
+Note that $t(1) = 0$ and $t(x)$ is a convex function.  This expresses the Bayes error as an f-divergence between conditional densities $f_1$ and $f_2$. 
+
 
 \end{document}
