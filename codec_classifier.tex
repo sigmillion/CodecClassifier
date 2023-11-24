@@ -100,7 +100,39 @@ Then
 t(x) &= \frac{1}{2} \left[ (p_2-p_1 x) + |p_2 - p_1 x|\right] - \max(p_2-p_1,0) \\
 &= \max(p_2-p_1x,0) - \max(p_2-p_1,0).
 \end{align*}
-Note that $t(1) = 0$ and $t(x)$ is a convex function.  This expresses the Bayes error as an f-divergence between conditional densities $f_1$ and $f_2$. 
+
+A $f$-divergence between two density functions $f_1$ and $f_2$ is defined as
+\begin{gather*}
+D_g(f_1 || f_2) = \int f_2(x) g\left(\frac{f_1(x)}{f_2(x)} \right) dx = E_{f_2} \left[g\left(\frac{f_1(X)}{f_2(X)}\right)\right],
+\end{gather*}
+where $g$ is a smooth and convex function such that $g(1) = 0$.  The KL-divergence, Hellinger distance, and total variation distance are special cases when $g(x) = x \log(x), (1-\sqrt{x})^2, \frac{1}{2} |x-1|$, respectively.  Observe that $t$ satisfies the properties required in the definition of $f$-divergence: $t(1) = 0$ and $t(x)$ is a convex function.  Thus, the expression for the Bayes error above shows it able to be written as an f-divergence between conditional densities $f_1$ and $f_2$.
+
+\subsection{Using Bayes Error with Data}
+
+When observations of $x$ are available under $f_1$ and $f_2$, the ensemble average is replaced by a sample average
+\begin{gather*}
+\hat{{\cal E}}(X_1,X_2) = \min(\hat{p}_1, \hat{p}_2) - \frac{1}{N_2} \sum_{i=1}^{N_2} \tilde{t}\left(\hat{U}_i\right),
+\end{gather*}
+where $\tilde(t)(x) = \max(t(x),t(C_L/C_U))$, $0 < C_L \leq f_1(x), f_2(x) \leq C_U$, and $\hat{p}_1,\hat{p}_2$ are emperical estimates (relative frequencies) of the class labels in the training set.  $\hat{U}_i$ is an estimate of the density ratio at point $x_i$ with class label 2, which is computed based on the data points falling into an $\epsilon$-ball about $x_i$, and $N_2$ is the number of class 2 points.
+
+A symmetric version of Bayes error is
+\begin{gather*}
+{\cal E}_\epsilon = \frac{N_2}{N} \hat{{\cal E}}(X_1,X_2) + \frac{N_1}{N}\hat{{\cal E}}(X_2,X_1) = \min(\hat{p}_1, \hat{p}_2) - \frac{1}{N} \sum_{i=1}^{N} \tilde{t}\left(\hat{U}_i^\epsilon\right),
+\end{gather*}
+where $\hat{U}_i^\epsilon$ is the density ratio estimate using a $\epsilon$-ball about the point $x_i$ (see Noshad's thesis for the definition).  Estimates for various values of $\epsilon$ may be combined to improve convergence behavior.  See Noshad's thesis for more information.
+Noshad's thesis also presents a multi-class version of the Bayes error estimator.
+
+\section{Mutual Information}
+
+\subsection{Nearest Neighbor Ratio (NNR)}
+
+The NNR provides estimates of divergence (either Renyi divergence or $f$-divergence).  The NNR estimate of mutual information is obtained by constructing a second dataset in which the class labels are randomly permuted leading to independence between the features and the labels.  These two datasets are passed into a divergence measure
+\begin{gather*}
+\hat{I}(X,Y) = \hat{D}((X,PY) || (X,Y)).
+\end{gather*}
+See chapter 2 in Noshad's thesis for more information on this approach.  A randomized and ensemble version of NNR are also presented with improved performance.  I tend to think that the basic NNR would be sufficient for training/learning the selective arrays by greedy tree building methods.  In this case, we are trying to maximize the mutual information between the input features or their class labels and the binary codes produced in the layers of the trees being built to approximate the selective arrays.  In building a tree that approximates a selective array, splits on various input variables (bits from the codeword produced in the previous layer) are considered.  To evaluate the fitness of any split, pass the training data through the classifier up to the previous layer.  Pass the codeword for each input through the split in question.  This gives a base dataset.  Construct a second dataset in which the class lables are randomly permuted.  Use these two datasets to evaluate a the NNR estimate of mutual information.  One question is whether to use a different random permutation every time or to reuse the same random permutation multiple times when comparing splits on different input variables.  I tend to think that the same permutation should be used when comparing the splits on different input variables because we don't want the randomness in the permutation to bias the variable selection process.  Perhaps several permtuations should be used and the results averaged together to reduce bias.
+
+Maybe this fancy mutual information estimation is unnecessary because our data are discrete and we can simply use histogram estiamtes.  The class labels are few in number and the bits in the binary codes are binary valued.  With a large dataset, the histogram estimates might work very well.
 
 
 \end{document}
