@@ -6,6 +6,8 @@
 \title{Codec Classifier}
 \date{November 17, 2023}
 
+\newcommand{\Rset}{{\cal R}}
+
 \begin{document}
 
 \maketitle
@@ -133,6 +135,59 @@ The NNR provides estimates of divergence (either Renyi divergence or $f$-diverge
 See chapter 2 in Noshad's thesis for more information on this approach.  A randomized and ensemble version of NNR are also presented with improved performance.  I tend to think that the basic NNR would be sufficient for training/learning the selective arrays by greedy tree building methods.  In this case, we are trying to maximize the mutual information between the input features or their class labels and the binary codes produced in the layers of the trees being built to approximate the selective arrays.  In building a tree that approximates a selective array, splits on various input variables (bits from the codeword produced in the previous layer) are considered.  To evaluate the fitness of any split, pass the training data through the classifier up to the previous layer.  Pass the codeword for each input through the split in question.  This gives a base dataset.  Construct a second dataset in which the class lables are randomly permuted.  Use these two datasets to evaluate a the NNR estimate of mutual information.  One question is whether to use a different random permutation every time or to reuse the same random permutation multiple times when comparing splits on different input variables.  I tend to think that the same permutation should be used when comparing the splits on different input variables because we don't want the randomness in the permutation to bias the variable selection process.  Perhaps several permtuations should be used and the results averaged together to reduce bias.
 
 Maybe this fancy mutual information estimation is unnecessary because our data are discrete and we can simply use histogram estiamtes.  The class labels are few in number and the bits in the binary codes are binary valued.  With a large dataset, the histogram estimates might work very well.
+
+\section{Methodology}
+
+The proposed learning process consists of two steps: (1) learning the encoder that exhaustively segments the input feature space, and (2) learning a decoder that exhaustively labels each region in the segmentation.
+
+\subsection{Encoder: Exhaustive Segmentation}
+
+The first step keeps adding trees or stumps until the feature space is segmented into pure regions or until a desired error rate is achieved.  Pure regions would give zero error on the training set.  The overall classifier will achieve no better error rate than what is enabled by the segmentation.  The tradeoff is that achieving pure regions may require dramatically more regions than achieving a non-zero error rate.  Thus error rate may be used to control the size of the encoder layer.
+
+\subsection{Decoder: Exhaustive Labeling}
+
+An ideal decoder will assign a label to each region created by the encoder.  Because this is usually not possible, a practical decoder, which is subject to memory constraints for storage and to compoutational constraints during learning, is suboptimal.  Finding the optimal is a constrained optimization problem.  Among many options available, we explore the use of bagged or boosted trees to perform a greedy search.
+
+\section{Encoder Training}
+
+In a $k$-class learning problem, two approaches for encoder learning will be explored.  The goal with both approaches is to exhaustively segments (zero error on the training set) or approximately segments (training set error below a predetermined allowable error rate).
+
+\subsection{Approach 1: $k$-class boosting}
+
+The first approach employs the standard multi-class AdaBoost algorithm which augments the objective function with a $k$-dependent term.  The resulting trees contain $k$-element probability vectors in the leaves.  These vectors express the relative frequency of points from the training set that fall into the region corresponding to the leaf.  Pure regions yield one-hot vectors.
+
+\subsection{Approach 2: Randomized Binary Boosting}
+
+The second approach employs a modification to the standard algorithm for binary AdaBoost for learning.  The modification involves two steps.  On each iteration, before the next tree is built, the dataset is divided into two classes rather than $k$-classes.  This is done by a process we call ``splitting the deck''.  As in playing a card game, the class labels are treated as cards, the cards are shuffled to randomize them, and then the deck of cards is randomly split into two sets.  This may be accomplished in code using a random permutation followed by generating a random split point according to some distribution such as a uniform distribution or another distribution such as a binomial distribution that is biased toward splitting the deck in half.  Following this deck-splitting operation, one set of classes is considered the ``0'' class and the other set of classes is considered the ``1'' class.  The next tree is trained to minimize error on this binary segmentation of the dataset.
+
+Why does randomized binary boosting (RBB) properly segment the input feature space?  In simple terms, a classifier that discriminates based on a fine attributes is able to classify based on course attributes.  RBB uses this concept in reverse.  It by learning binary classification on multiple random binary splits of the training data, it learns the finer segmentation.
+
+
+Let $g$ be a $k$-class classifier $g(x) = i$ if $x \in R_i$ for $i \in I = \{1, 2, \cdots, k\}$, where $R_i$ is the region of the input feature space where the classifier chooses class $i$.  We note that the $R_i$ are disjoint and cover feature space.
+
+Let $h$ be a binary classifier derived from $g$ via a random deck-shuffling operation.  Let $I_a$ and $I_b$ be disjoint index sets corresponding to class $a$ and class $b$ respectively, $I=I_a \cup I_b$.  Let $R_a = \cup_{i \in I_a} R_i$ and $R_b = \cup_{i \in I_b} R_i$ be a disjoint binary partition of the input feature space.  Then $h(x) = a$ if $x \in R_a$ and $h(x) = b$ otherwise.
+
+The error rate of $h$ is
+\begin{align*}
+{\cal E}_h &= \int_{R_b} p_a f(x|a) dx + \int_{R_a} p_b f(x|b) dx \\
+&= \sum_{j \in I_b} \int_{R_j} p_a f(x|a) dx + \sum_{j\in I_a} \int_{R_j} p_b f(x|b) dx \\
+&= \sum_{i \in I_a} \sum_{j \in I_b} \int_{R_j} p_i f(x|i) dx + \sum_{i \in I_b} \sum_{j \in I_a} \int_{R_j} p_b f(x|b) dx.
+\end{align*}
+
+The error rate of $g$ is
+\begin{align*}
+{\cal E}_g &= \sum_{i \in I} \sum_{j\neq i} \int_{R_j} p_i f(x|i) dx \\
+&= \sum_{i \in I_a} \sum_{j \neq i} \int_{R_j} p_i f(x|i) dx + \sum_{i \in I_b} \sum_{j \neq i} \int_{R_j} p_i f(x|i) dx\\
+&= \sum_{i \in I_a} \sum_{j \in I_b} \int_{R_j} p_i f(x|i) dx + \sum_{i \in I_a} \sum_{j \in I_a, j\neq i} \int_{R_j} p_i f(x|i) dx \\
+&+ \sum_{i \in I_b} \sum_{j \in I_a} \int_{R_j} p_i f(x|i) dx + \sum_{i \in I_b} \sum_{j \in I_b, j\neq i} \int_{R_j} p_i f(x|i) dx\\
+&= {\cal E}_h + {\cal E}_{g,a} + {\cal E}_{g,b}, \\
+{\cal E}_{g,a} &= \sum_{i \in I_a} \sum_{j \in I_a, j\neq i} \int_{R_j} p_i f(x|i) dx,\\
+{\cal E}_{g,b} &= \sum_{i \in I_b} \sum_{j \in I_b, j\neq i} \int_{R_j} p_i f(x|i) dx,
+\end{align*}
+where ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$ are the error rates for the $k$-class classifier for particular kinds of errors.  ${\cal E}_{g,a}$ counts errors to classes in the set $I_a$ when $i \in I_a$, and the same for ${\cal E}_{g,b}$.  
+
+Thus we see that the $k$-class error rate is equal to the binary error rate plus the sum of the within class error rates ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$.  However, we note that the error rates derived above are random variables that depend on the distribution of the deck-shuffling operation.  The proposed training process effectively minimizes the binary error rate over multiple draws of deck-shuffling.  Each draw randomizes the membership of classes $a$ and $b$ in the binary problem.  Minimizing the binary error over random draws will minimize the within class error rates.  Thus the $k$-class error rate is minimized in turn.
+
 
 
 \end{document}
