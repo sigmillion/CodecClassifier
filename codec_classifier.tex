@@ -2,6 +2,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
+%\usepackage[style=ieee, sorting=ynt, doi=false,isbn=false,url=false,eprint=false, defernumbers=true]{biblatex}
+%\addbibresource{papers.bib}
 
 \title{Codec Classifier}
 \date{November 17, 2023}
@@ -188,6 +190,34 @@ where ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$ are the error rates for the $k$-clas
 
 Thus we see that the $k$-class error rate is equal to the binary error rate plus the sum of the within class error rates ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$.  However, we note that the error rates derived above are random variables that depend on the distribution of the deck-shuffling operation.  The proposed training process effectively minimizes the binary error rate over multiple draws of deck-shuffling.  Each draw randomizes the membership of classes $a$ and $b$ in the binary problem.  Minimizing the binary error over random draws will minimize the within class error rates.  Thus the $k$-class error rate is minimized in turn.
 
+\section{Related Work}
 
+\subsection{Hashing}
 
+Zhang {\em et al} \cite{fast_knn} describe a method for fast approximate construction of a $k$-nearest neighbor ($k$nn) graph.  They divide a dataset into groups and construct a full $k$nn graph in each group.  The complexity of their method scales with group size.  Division of data into groups is done using hashing in a way that preserves pairwise similarities, i.e. similar items fall into the same group.  This is called locally sensitive hashing (LSH).  In general, a hash has the form
+\begin{gather*}
+h(x) = [ h_1(x), h_2(x), \cdots, h_m(x) ],
+\end{gather*}
+where $h_i(x) \in \mathbb{Z}$ (integers).  The specific hash mentioned in the papaer is
+\begin{gather*}
+h_i(x) = \text{sgn}(w_i^T x + b_i) \in \{-1, +1\},
+\end{gather*}
+where $w_i$ and $b_i$ are parameters to be learned by an unspecified method.  A datapoint $x$ is placed in a "bucket" by applying the hash map $h(x)$ and then using the $m$-digit $\pm 1$ code as the bucket index.  LSH keeps similar points together using a set of sliced (affine) projections.
+
+The fast $k$nn method uses a binary $\{0,1\}^m$ hash code $y = h(x)$ and uses random projection $w$, $p = w^T y$.  To keep similar points together in groups, the $p$ values are sorted and then blocked into groups of the desired size.  Fully $k$nn graphs are constructed from these groups followed by one stage of neighbor-of-neighbor search.  The whole process is repeated several times using different random projections of the hash codes, and the accuracy of the method is a very good approximation to the full $k$nn graph.
+
+This work is interesting and related for several reasons.
+\begin{enumerate}
+\item Like this work, we propose to use binary codes.  The binary codes in our method may be thought of as a hash.
+\item This method uses learned projections $h_i(x) = \text{sgn}(w_i^T x + b_i)$ to build the has.  Our method uses AdaBoost to construct axis-aligned projections $h_i(x) = \text{sgn}_{\{0,1\}}(e_i^T x - t_i)$ which is equivalent to the logical condition in a decision node $x_i \leq t_i$ in a decision tree.  They do not say how the $w_i$ and $b_i$ are learned in their method.  We follow the principled approach of AdaBoost which has the advantageous claim that it's error approaches the Bayes error (i.e. the best that a classifier can do).
+\end{enumerate}
+
+\subsection{Binary and $k$-Class Problems}
+
+Talk in this section about how we propose to handle the $k$-class case either by using multi-class AdaBoost or by using a binary partitioning of the data at each step.  The binary partitioning can be done in multiple ways.  Here we can refer to Singer's one-versus-all splitting or we can follow a random uniform, half-and-half, or $k~$binomial or Poisson splitting.
+
+It may also be a good idea to cover the strong weak learner verses weak weak learner concept here too.
+
+\bibliography{papers.bib}{}
+\bibliographystyle{IEEE}
 \end{document}
