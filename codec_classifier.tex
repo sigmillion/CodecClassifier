@@ -186,7 +186,7 @@ The error rate of $g$ is
 \end{align*}
 where ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$ are the error rates for the $k$-class classifier for particular kinds of errors.  ${\cal E}_{g,a}$ counts errors to classes in the set $I_a$ when $i \in I_a$, and the same for ${\cal E}_{g,b}$.  
 
-Thus we see that the $k$-class error rate is equal to the binary error rate plus the sum of the within class error rates ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$.  However, we note that the error rates derived above are random variables that depend on the distribution of the deck-shuffling operation.  The proposed training process effectively minimizes the binary error rate over multiple draws of deck-shuffling.  Each draw randomizes the membership of classes $a$ and $b$ in the binary problem.  Minimizing the binary error over random draws will minimize the within class error rates.  Thus the $k$-class error rate is minimized in turn.
+Thus we see that the $k$-class error rate is equal to the binary error rate plus the sum of the within class error rates ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$.  However, we note that the error rates derived above are random variables that depend on the distribution of the deck-shuffling operation.  The proposed training process effectively minimizes the binary error rate over multiple draws of deck-shuffling.  Each draw randomizes the membership of classes $a$ and $b$ in the binary problem.  Minimizing the binary error over random draws will minimize the within class error rates.  Thus the $k$-class error rate is minimized in turn. (Need to prove this claim rigorously.)
 
 
 
