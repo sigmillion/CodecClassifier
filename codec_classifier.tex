@@ -209,7 +209,7 @@ The fast $k$nn method uses a binary $\{0,1\}^m$ hash code $y = h(x)$ and uses ra
 This work is interesting and related for several reasons.
 \begin{enumerate}
 \item Like this work, we propose to use binary codes.  The binary codes in our method may be thought of as a hash.
-\item This method uses learned projections $h_i(x) = \text{sgn}(w_i^T x + b_i)$ to build the has.  Our method uses AdaBoost to construct axis-aligned projections $h_i(x) = \text{sgn}_{\{0,1\}}(e_i^T x - t_i)$ which is equivalent to the logical condition in a decision node $x_i \leq t_i$ in a decision tree.  They do not say how the $w_i$ and $b_i$ are learned in their method.  We follow the principled approach of AdaBoost which has the advantageous claim that it's error approaches the Bayes error (i.e. the best that a classifier can do).
+\item This method uses learned projections $h_i(x) = \text{sgn}(w_i^T x + b_i)$ to build the has.  Our method uses AdaBoost to construct axis-aligned projections $h_i(x) = \text{sgn}(e_i^T x - t_i) \in \{0,1\}$ which is equivalent to the logical condition in a decision node $x_i \leq t_i$ in a decision tree.  The authors do not say how the $w_i$ and $b_i$ are learned in their method.  We follow the principled approach of AdaBoost which has the advantageous claim that it's error approaches the Bayes error (i.e. the best that a classifier can do).
 \end{enumerate}
 
 \subsection{Binary and $k$-Class Problems}
@@ -217,6 +217,15 @@ This work is interesting and related for several reasons.
 Talk in this section about how we propose to handle the $k$-class case either by using multi-class AdaBoost or by using a binary partitioning of the data at each step.  The binary partitioning can be done in multiple ways.  Here we can refer to Singer's one-versus-all splitting or we can follow a random uniform, half-and-half, or $k~$binomial or Poisson splitting.
 
 It may also be a good idea to cover the strong weak learner verses weak weak learner concept here too.
+
+The paper:
+
+Ji Zhu, Hui Zhou, Saharon Rosset and Trevor Hastie, Multi-class Adaboost. A multi-class generalization of the Adaboost algorithm, based on a generalization of the exponential loss.
+Finally published in 2009 in Statistics and Its Interface Volume 2 (2009) 349-360.
+
+discusses many of the early methods at extending AdaBoost to the multi-class case and points out that what they did is basically convert the $k$-class problem into binary problems.  To contrast this with our work, we are not building the encoder/hasher to be a $k$-class classifier or a binary classifier.  We are building the encoder/hasher to segment feature space only and to construct a codeword/hash for each region of feature space.  The decoder assigns labels to the regions.  Therefore, our method for random binary splitting of the classes at each stage of AdaBoost is done for a different region, and we only need the approach to create good segmentations of feature space.  Whatever method that will do that can be used.  Because we are outputting binary codes, using a $k$-class algorithm does not "fit" our objective.
+
+What does fit our objective is a boosting algorithm that, on every iteration, suffles the classes and "splits the deck" in the sense of dividing the shuffled classes into two sets.  These sets need not be equal in size and we can use a probability distribution to select the splitting.  The question I have is whether the standard weight update in AdaBoost is appropriate to use without modification, or do we need to go back and recompute the weights according to the new binary super-classes?  Recomputing the weights would amount to initializing the weights as uniform and then following only the weight update up to the current stage.  This would give weights that reflect the ability of the current classifier according to the new binary super-classes.  Without recomputing, the weights correspond to how a different classifier (one trained on different binary super-classes) makes errors.  Which one of these approaches is "right" or does it even matter?
 
 \bibliography{papers.bib}{}
 \bibliographystyle{IEEE}
