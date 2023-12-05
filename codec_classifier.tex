@@ -202,6 +202,17 @@ Boosting a layer of small trees may be used for the decoder.  If we sample at ra
 \subsection{Boost Selective Arrays}
 A collection of selective arrays could be trained using boosting.  The array size is fixed at say 1kB.  Array elements are probability vectors for the class labels.  Selecting several bits from the input codeword groups together regions in the input space.  This is done multiple times at random and the best resulting array is kept as the weak learner.  This process is boosted using the AdaBoost algorithm that increases weights on mis-classified values.
 
+\section{Is the the coder-decoder architecture a good idea?}
+Before taking up the main question, we need to introduce some terminology.  The codec classifier uses binary codes in the leaf nodes of the trees in the encoder.  In general for classification and regression problems, there is no need to require leaf values to be crisp binary values.  Underlying this whole research theme is the is the idea of the encoder producing hard quantized outputs.  Going from feature vectors (raw inputs) to hard quantized values in a single stage may be too abrupt of a transition and may be asking too much of that first stage.  It may be wise to soften the transition through several stages of processing with soft values being passed between the stages.  However, to move the discussion forward, we refer to trees and stumps with binary values in their leaf nodes as bees and bumps instead of trees and stumps.
+
+The main question up for debate about the coder-decoder classifier architecture is whether there is any value beyond what the boosted classifier can already deliver.  Boosting bees/bumps in the first layer produces a classifier
+\begin{gather*}
+H(x) = \text{sgn}\left( \sum_{i=1}^T \alpha_i h_i(x)\right)
+\end{gather*}
+that assigns a value to every region in the input feature space.  That partitioning of feature space and the values assigned to each region may be explored using my region adjacency graph framework.  The main question is whether the decoder in the codec-classifier, which has the freedom to make independent assignments to those regions, has any performance improvement to offer beyond what the the boosted classifier $H(x)$ already offers.  It is true that the forward additive modeling of AdaBoost is tightly constrained by the algorithm, but that tight control may be exactly the right thing to do to approach the Bayes error.  The constraints are not necessarily a bad thing.  Our main question is then what does the codec-classifier architecture offer.  It's encoder breaks apart the weak learners $h_i(x)$ and doesn't formally use $H(x)$ at all.  Instead, it uses each bee/bump $h_i(x)$ to produce bit(s) in the codeword.  The codeword indexes a region that gets a constant class assignment $\hat{y}$.
+
+Perhaps the best way to analyze this situation is to start by using the ideal decoder which is an array of $2^d$ elements that stores the class label for each region.  Many codewords are associated with empty regions and these array elements then need not be filled.  Does this ideal decoder offer any advantage over AdaBoost?  The idea decoder must be a superset of the AdaBoost assignment.  So perhaps our analysis should be of AdaBoost itself.  Can we find a situation in which you could do better than AdaBoost with arbitrary region assignments.  To put this another way, the codec-classifier is the most general form of classifier.  It can make arbitrary class assignments to each region.  The 
+
 \section{Related Work}
 
 \subsection{Hashing}
