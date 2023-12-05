@@ -190,6 +190,18 @@ where ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$ are the error rates for the $k$-clas
 
 Thus we see that the $k$-class error rate is equal to the binary error rate plus the sum of the within class error rates ${\cal E}_{g,a}$ and ${\cal E}_{g,b}$.  However, we note that the error rates derived above are random variables that depend on the distribution of the deck-shuffling operation.  The proposed training process effectively minimizes the binary error rate over multiple draws of deck-shuffling.  Each draw randomizes the membership of classes $a$ and $b$ in the binary problem.  Minimizing the binary error over random draws will minimize the within class error rates.  Thus the $k$-class error rate is minimized in turn. (Need to prove this claim rigorously.)
 
+\section{Training the Decoder}
+We have described a classifier architecture consisting of an encoder that splits up feature space into many segments and outputs a codeword for all feature vectors falling into the corresponding region.  The decoder converts the codeword into a class label.  Training the decoder can be done by several means.
+
+\subsection{Single Decision Tree}
+A single large decision tree may be grown.  Evaluating splits at each decision node is easy because of the binary nature of the input.  There is only one split to consider for each input feature index.  This means that we could probably try splitting on all of the possible input variables at each decision node.  This grows exponentially with the depth of the tree because each layer doubles the number of decision nodes.  Keep growing the tree until leaf nodes are pure or until some probability of error is reached.  The large tree acts like a look-up table.  How is this different from simply growing one large tree on the original input data?
+
+\subsection{Boosting Trees}
+Boosting a layer of small trees may be used for the decoder.  If we sample at random the bits of the input codeword, then this method uses trees like small selective arrays.  Boost a layer of these.  Because the tree inputs are binary, the expensive threshold sweep is not needed.  There is only one possible split point that needs to be evaluated at each decision node.  This means that more indexes can be explored at each decision node.  The trees output binary codes until the last layer where an actual selective array is used.  This array holds the class indexes.
+
+\subsection{Boost Selective Arrays}
+A collection of selective arrays could be trained using boosting.  The array size is fixed at say 1kB.  Array elements are probability vectors for the class labels.  Selecting several bits from the input codeword groups together regions in the input space.  This is done multiple times at random and the best resulting array is kept as the weak learner.  This process is boosted using the AdaBoost algorithm that increases weights on mis-classified values.
+
 \section{Related Work}
 
 \subsection{Hashing}
