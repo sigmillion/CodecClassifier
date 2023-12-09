@@ -164,7 +164,6 @@ for i=1:enc.T
             % 6. Compute mutual information
             e = entries(Ncj,'struct');
             MI(s) = 0;
-            edge_sum = 0;
             for ie = 1:length(e)
                 cj = e(ie).Key;
                 c = floor(cj/dataset.K);
@@ -181,13 +180,12 @@ for i=1:enc.T
                     g = 20; disp('CLIPPED');
                 end
                 MI(s) = MI(s) + wc*wj*g;
-                edge_sum = edge_sum + Ncjval;
             end % Loop over graph edges ei
-            fprintf('edge_sum = %d\n',edge_sum);
             
             if MI(s) > themax
                 themax = MI(s);
                 maxind = ind(s);
+                maxind1 = ind(s+1);
             end
 
             fprintf('s=%d =======================\n',s);
@@ -198,7 +196,7 @@ for i=1:enc.T
         if themax > bestmax
             bestmax = themax;
             bestind = d;
-            bestthresh = 0.5*(dataset.X(maxind,d) + dataset.X(maxind+1,d));
+            bestthresh = 0.5*(dataset.X(maxind,d) + dataset.X(maxind1,d));
         end
         figure(20);
         plot(MI); hold on;
