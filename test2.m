@@ -76,26 +76,24 @@ for i=1:enc.T
             Ncval = lookup(Nc,c,FallbackValue=0);
             Ncval = Ncval + 1;
             Nc(c) = Ncval;
-            %insert(Nc,c,Ncval);
 
             Mjval = lookup(Mj,y,Fallbackvalue=0);
             Mjval = Mjval + 1;
             Mj(y) = Mjval;
-            %insert(Mj,y,Mjval);
 
             Ncjval = lookup(Ncj,cj,Fallbackvalue=0);
             Ncjval = Ncjval + 1;
             Ncj(cj) = Ncjval;
-            %insert(Ncj,cj,Ncjval);
             disp([c y cj]);
         end
-        fprintf('Initialization\n');
-        fprintf('Nc sum = %d\n',sumvals(Nc));
-        fprintf('Mj sum = %d\n',sumvals(Mj));
-        fprintf('Ncj sum = %d\n',sumvals(Ncj));
-        pause;
+        %fprintf('Initialization\n');
+        %fprintf('Nc sum = %d\n',sumvals(Nc));
+        %fprintf('Mj sum = %d\n',sumvals(Mj));
+        %fprintf('Ncj sum = %d\n',sumvals(Ncj));
+        %pause;
         
         MI = zeros(dataset.N-1,1);
+        net_sum = 0;
         for s = 1:dataset.N-1 % Loop over splits
             % 1. Get codeword for x(s)
             c = 0;
@@ -111,35 +109,30 @@ for i=1:enc.T
             cj = c*dataset.K + y; % Zero-based index
             
             % 3. Index the dictionaries and decrement the counts
-            %Ncval = lookup(Nc,c,FallbackValue=0);
             Ncval = Nc(c);
             Ncval = Ncval - 1;
             if Ncval <= 0
-                remove(Nc,c);
+                Nc(c) = [];
             else
                 Nc(c) = Ncval;
             end
-            %insert(Nc,c,Ncval);
 
-            %Mjval = lookup(Mj,y,Fallbackvalue=0);
             Mjval = Mj(y);
             Mjval = Mjval - 1;
             if Mjval <= 0
-                remove(Mj,y);
+                Mj(y) = [];
             else
                 Mj(y) = Mjval;
             end
-            %insert(Mj,y,Mjval);
 
-            %Ncjval = lookup(Ncj,cj,Fallbackvalue=0);
             Ncjval = Ncj(cj);
             Ncjval = Ncjval - 1;
+            net_sum = net_sum - 1;
             if Ncjval <= 0
-                remove(Ncj,cj);
+                Ncj(cj) = [];
             else
                 Ncj(cj) = Ncjval;
             end
-            %insert(Ncj,cj,Ncjval);
             
             % 4. Append a 0 to the codeword
             c = c - 2^(i-1); % Zero-based index
@@ -149,17 +142,15 @@ for i=1:enc.T
             Ncval = lookup(Nc,c,FallbackValue=0);
             Ncval = Ncval + 1;
             Nc(c) = Ncval;
-            %insert(Nc,c,Ncval);
 
             Mjval = lookup(Mj,y,Fallbackvalue=0);
             Mjval = Mjval + 1;
             Mj(y) = Mjval;
-            %insert(Mj,y,Mjval);
 
             Ncjval = lookup(Ncj,cj,Fallbackvalue=0);
             Ncjval = Ncjval + 1;
             Ncj(cj) = Ncjval;
-            %insert(Ncj,cj,Ncjval);
+            net_sum = net_sum + 1;
             
             % 6. Compute mutual information
             e = entries(Ncj,'struct');
@@ -168,9 +159,9 @@ for i=1:enc.T
                 cj = e(ie).Key;
                 c = floor(cj/dataset.K);
                 y = cj - c*dataset.K;
-                Ncval = Nc(c); %lookup(Nc,c);
-                Mjval = Mj(y); %lookup(Mj,y);
-                Ncjval = Ncj(cj); %lookup(Ncj,cj);
+                Ncval = Nc(c);
+                Mjval = Mj(y);
+                Ncjval = Ncj(cj);
                 wc = Ncval/dataset.N;
                 wj = Mjval/dataset.N;
                 wcj = Ncjval/dataset.N;
@@ -188,10 +179,11 @@ for i=1:enc.T
                 maxind1 = ind(s+1);
             end
 
-            fprintf('s=%d =======================\n',s);
-            fprintf('Nc sum = %d\n',sumvals(Nc));
-            fprintf('Mj sum = %d\n',sumvals(Mj));
-            fprintf('Ncj sum = %d\n',sumvals(Ncj));            
+            %fprintf('s=%d =======================\n',s);
+            %fprintf('Nc sum = %d\n',sumvals(Nc));
+            %fprintf('Mj sum = %d\n',sumvals(Mj));
+            %fprintf('Ncj sum = %d\n',sumvals(Ncj));
+            %fprintf('net sum = %d\n',net_sum);
         end % Loop over splits s
         if themax > bestmax
             bestmax = themax;
