@@ -84,7 +84,7 @@ for i=1:enc.T
             Ncjval = lookup(Ncj,cj,Fallbackvalue=0);
             Ncjval = Ncjval + 1;
             Ncj(cj) = Ncjval;
-            disp([c y cj]);
+            %disp([c y cj]);
         end
         %fprintf('Initialization\n');
         %fprintf('Nc sum = %d\n',sumvals(Nc));
