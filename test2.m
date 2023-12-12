@@ -4,7 +4,7 @@
 % Date: December 8, 2023
 
 % Generate data in 2D
-num = 100;
+num = 1000;
 dataset.D = 2;
 x = randn(num,2);
 r = randn(num,1) + 4;
@@ -53,9 +53,15 @@ for i=1:enc.T
         maxind = 0;
 
         % Create empty dictionaries
-        Nc = configureDictionary('double','double');
-        Mj = configureDictionary('double','double');
-        Ncj = configureDictionary('double','double');
+        if 0
+            Nc = configureDictionary('double','double');
+            Mj = configureDictionary('double','double');
+            Ncj = configureDictionary('double','double');
+        else
+            Nc = dictionary([],[]);
+            Mj = dictionary([],[]);
+            Ncj = dictionary([],[]);
+        end
         
         % Initialize the dictionary counts:
         for s=1:dataset.N
@@ -73,18 +79,29 @@ for i=1:enc.T
             cj = c*dataset.K + y; % Zero-based index
 
             % 3. Index the dictionaries and increment counts
-            Ncval = lookup(Nc,c,FallbackValue=0);
-            Ncval = Ncval + 1;
+            if isKey(Nc,c)
+                Ncval = Nc(c);
+                Ncval = Ncval + 1;
+            else
+                Ncval = 1;
+            end
             Nc(c) = Ncval;
 
-            Mjval = lookup(Mj,y,Fallbackvalue=0);
-            Mjval = Mjval + 1;
+            if isKey(Mj,y)
+                Mjval = Mj(y);
+                Mjval = Mjval + 1;
+            else
+                Mjval = 1;
+            end
             Mj(y) = Mjval;
 
-            Ncjval = lookup(Ncj,cj,Fallbackvalue=0);
-            Ncjval = Ncjval + 1;
+            if isKey(Ncj,cj)
+                Ncjval = Ncj(cj);
+                Ncjval = Ncjval + 1;
+            else
+                Ncjval = 1;
+            end
             Ncj(cj) = Ncjval;
-            %disp([c y cj]);
         end
         %fprintf('Initialization\n');
         %fprintf('Nc sum = %d\n',sumvals(Nc));
@@ -93,7 +110,6 @@ for i=1:enc.T
         %pause;
         
         MI = zeros(dataset.N-1,1);
-        net_sum = 0;
         for s = 1:dataset.N-1 % Loop over splits
             % 1. Get codeword for x(s)
             c = 0;
@@ -127,7 +143,6 @@ for i=1:enc.T
 
             Ncjval = Ncj(cj);
             Ncjval = Ncjval - 1;
-            net_sum = net_sum - 1;
             if Ncjval <= 0
                 Ncj(cj) = [];
             else
@@ -139,19 +154,29 @@ for i=1:enc.T
             cj = c*dataset.K + y; % Zero-based index
             
             % 5. Index the dictionaries and increment the counts
-            Ncval = lookup(Nc,c,FallbackValue=0);
-            Ncval = Ncval + 1;
+            if isKey(Nc,c)
+                Ncval = Nc(c);
+                Ncval = Ncval + 1;
+            else
+                Ncval = 1;
+            end
             Nc(c) = Ncval;
 
-            Mjval = lookup(Mj,y,Fallbackvalue=0);
-            Mjval = Mjval + 1;
+            if isKey(Mj,y)
+                Mjval = Mj(y);
+                Mjval = Mjval + 1;
+            else
+                Mjval = 1;
+            end
             Mj(y) = Mjval;
 
-            Ncjval = lookup(Ncj,cj,Fallbackvalue=0);
-            Ncjval = Ncjval + 1;
-            Ncj(cj) = Ncjval;
-            net_sum = net_sum + 1;
-            
+            if isKey(Ncj,cj)
+                Ncjval = Ncj(cj);
+                Ncjval = Ncjval + 1;
+            else
+                Ncjval = 1;
+            end
+            Ncj(cj) = Ncjval;            
             % 6. Compute mutual information
             e = entries(Ncj,'struct');
             MI(s) = 0;
@@ -183,7 +208,6 @@ for i=1:enc.T
             %fprintf('Nc sum = %d\n',sumvals(Nc));
             %fprintf('Mj sum = %d\n',sumvals(Mj));
             %fprintf('Ncj sum = %d\n',sumvals(Ncj));
-            %fprintf('net sum = %d\n',net_sum);
         end % Loop over splits s
         if themax > bestmax
             bestmax = themax;
