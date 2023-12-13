@@ -11,8 +11,13 @@ r = randn(num,1) + 4;
 th = 2*pi*rand(num,1);
 y = [r.*cos(th),r.*sin(th)];
 dataset.X = [x;y];
-dataset.y = [zeros(num,1);ones(num,1)]; % Classes 0 and 1
-dataset.K = 2; % Number of classes
+r = randn(num,1) + 8;
+th = 2*pi*rand(num,1);
+y = [r.*cos(th),r.*sin(th)];
+dataset.X = [dataset.X;y];
+
+dataset.y = [zeros(num,1);ones(num,1);2*ones(num,1)]; % Classes 0 and 1
+dataset.K = 3; % Number of classes
 dataset.N = length(dataset.y);
 dataset.xmax = max(dataset.X(:,1));
 dataset.xmin = min(dataset.X(:,1));
@@ -23,10 +28,12 @@ clear x r th y num;
 % Plot dataset
 figure(30); clf;
 for i=1:dataset.N
-    if dataset.y(i) > 0
+    if dataset.y(i) == 0
         plot(dataset.X(i,1),dataset.X(i,2),'r+'); hold on;
-    else
+    elseif dataset.y(i) == 1
         plot(dataset.X(i,1),dataset.X(i,2),'bs'); hold on;
+    else
+        plot(dataset.X(i,1),dataset.X(i,2),'k^'); hold on;
     end
 end
 axis equal;
