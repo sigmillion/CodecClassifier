@@ -16,6 +16,7 @@ th = 2*pi*rand(num,1);
 y = [r.*cos(th),r.*sin(th)];
 dataset.X = [dataset.X;y];
 
+%dataset.y = [zeros(num,1);ones(num,1)]; % Classes 0 and 1
 dataset.y = [zeros(num,1);ones(num,1);2*ones(num,1)]; % Classes 0 and 1
 dataset.K = 3; % Number of classes
 dataset.N = length(dataset.y);
