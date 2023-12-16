@@ -1,17 +1,15 @@
 % Generate data in 2D
 num = 100;
-dataset.D = 2;
-x = randn(num,2);
+dataset.D = 1; % One dimensional
+x = randn(num,1);
 r = randn(num,1) + 4;
-th = 2*pi*rand(num,1);
-y = [r.*cos(th),r.*sin(th)];
+th = pi*(rand(num,1)>0.5);
+y = r.*cos(th);
 dataset.X = [x;y];
 dataset.y = [-ones(num,1);+ones(num,1)];
 dataset.N = length(dataset.y);
-dataset.xmax = max(dataset.X(:,1));
-dataset.xmin = min(dataset.X(:,1));
-dataset.ymax = max(dataset.X(:,2));
-dataset.ymin = min(dataset.X(:,2));
+dataset.xmax = max(dataset.X);
+dataset.xmin = min(dataset.X);
 clear x r th y num;
 
 figure(10); clf;
@@ -21,9 +19,9 @@ figure(10); clf;
 figure(30); clf;
 for i=1:dataset.N
     if dataset.y(i) > 0
-        plot(dataset.X(i,1),dataset.X(i,2),'r+'); hold on;
+        plot(dataset.X(i),0,'ro'); hold on;
     else
-        plot(dataset.X(i,1),dataset.X(i,2),'bs'); hold on;
+        plot(dataset.X(i),0,'bs'); hold on;
     end
 end
 axis equal;
@@ -123,6 +121,10 @@ for i=1:enc.T
         y(~logic) = -enc.v(j);
         H = H + enc.a(j)*y;
     end
+    figure(30); hold on;
+    [~,Hind] = sort(dataset.X);
+    plot(dataset.X(Hind),H(Hind),'LineWidth',3); hold on;
+
     H = sign(H);
     err_rate = sum(H ~= dataset.y)/dataset.N;
     fprintf("Iteration = %2d, error rate = %f\n",i,err_rate);
@@ -130,18 +132,10 @@ for i=1:enc.T
     figure(20);
     plot(enc.w); hold on;
     figure(30); ax = axis;
-    if enc.f(i) == 1
-        if enc.v(i) == -1
-            plot(enc.t(i)*[1 1],ax(3:4),'LineWidth',3);
-        else
-            plot(enc.t(i)*[1 1],ax(3:4),'--','LineWidth',3);
-        end
+    if enc.v(i) == -1
+        plot(enc.t(i)*[1 1],ax(3:4),'LineWidth',2);
     else
-        if enc.v(i) == -1
-            plot(ax(1:2),enc.t(i)*[1 1],'LineWidth',3);
-        else
-            plot(ax(1:2),enc.t(i)*[1 1],'--','LineWidth',3);
-        end
+        plot(enc.t(i)*[1 1],ax(3:4),'--','LineWidth',2);
     end
     pause;
 end

@@ -3,6 +3,22 @@
 % Author: Jake Gunther
 % Date: December 8, 2023
 
+% Date: December 16, 2023
+% Note: It is now time to expand this to MNIST.
+% For efficiency's sake, I will want to swap
+% out the sorting and searching approach and
+% instead use a fixed set of bins.  Because MNIST
+% is grayscale image data, I can use bins that
+% separate out the grayscale values.  Since the
+% pixels are 8-bit values, I could use 256 levels.
+% Or I could quantize a bit more and use fewer levels
+% based on the most significantn bits of the pixel
+% value.  I will still need to sort the values, but
+% I can sweep through the quantized splits faster
+% than sweeping through all possible splits.
+% Maybe start by adding binning to this code in 2D
+% and make sure you get that working first.
+
 % Generate data in 2D
 num = 1000;
 dataset.D = 2;
@@ -44,6 +60,8 @@ enc.T = 30; % Number of classifiers
 enc.t = zeros(enc.T,1); % Thresholds
 enc.f = zeros(enc.T,1); % Feature indexes
 enc.MI = zeros(enc.T,1); % Mutual information
+enc.dec = dictionary([],{}); % Decoder
+elem = {zeros(dataset.K,1), 0};
 
 % Loop over weak classifiers
 for i=1:enc.T
@@ -230,6 +248,9 @@ for i=1:enc.T
     % Build the weak learner
     enc.f(i) = bestind;
     enc.t(i) = bestthresh;
+
+    err = build_decoder(enc,dataset,i);
+    fprintf("%3d: error rate = %f\n",i,err);
 
     figure(30); ax = axis;
     if enc.f(i) == 1
