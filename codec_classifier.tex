@@ -2,6 +2,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
+%\usepackage{biblatex}
 %\usepackage[style=ieee, sorting=ynt, doi=false,isbn=false,url=false,eprint=false, defernumbers=true]{biblatex}
 %\addbibresource{papers.bib}
 \usepackage{graphicx}
@@ -296,6 +297,29 @@ In conclusion, the additive nature of AdaBoost and other ensemble-type classifie
 \end{center}
 
 \section{Analytical Behavior of AdaBoost and Mutual Information}
+
+Let $X$ be the set/space of feature vectors.  Usually $X = \mathbb{R}^n$ or a subset thereof.  Let $C: X \rightarrow \{0,1\}^d$ be the encoder mapping, $C(x) = c$, defined by a set of feature index, threshold pairs $(f_i, t_i), \;i=1, 2, \cdots, d$.  The bits in $c$ are defined by the logical condition
+\begin{gather*}
+c_i = \begin{cases} 0, & x_{f_i} \leq t_i, \\ 1, & x_{f_i} > t_i. \end{cases}
+\end{gather*}
+
+Training data are given as pairs $(x_i, y_i)$ for $i=1, 2, \cdots, N$, and we assume that these data are drawn from the distribution $p(x,y) = p(x|y)p(y)$.  The joint probability of a codeword $c(x)$ and $y$ is given by
+\begin{align*}
+p(c,y) &= p(c|y) p(y) \\
+&= \text{Prob}(x_{f_1} \square_{c_1} t_1 \;\; \text{and} \;\; \cdots \;\; \text{and} \;\; x_{f_d} \square_{c_d} t_d | y) p(y) \\
+&= p(y) \int_{R_{c}} p(x|y) dx,
+\end{align*}
+where $\square_{c_i}$ is the appropriate inequality based on the bit $c_i$, $R_{c}$ is the rectangular region determined by the codeword $c$, and $K$ is the number of classes.  We assume that $y \in \{1, 2, \cdots, K\}$.  
+
+The mutual information between $c$ and $y$ is given by
+\begin{align*}
+I(c,y) &= \sum_c \sum_y p(c,y) \log \frac{p(c,y)}{p(c) p(y)} \\
+&= \sum_c \sum_y p(y) p(c|y) \log \frac{p(c|y)}{\sum_g p(c|g) p(g)} \\
+&= \sum_c \sum_y p(y) \int_{R_c} p(x|y) dx \log \frac{\int_{R_c} p(x|y) dx}{\sum_g p(g) \int_{R_c} p(x|g)dx}.
+\end{align*}
+Mutual information encoder design maximizes this expression for MI which is a function of the next feature index $f_{d+1}$ and threshold $t_d$.  This is done in a manner similar to tree/stump design using other metrics.  A scan is performed over all indexes and for each index a threshold is swept over a range of values.
+
+It is interesting to compare the MI expression with the expression for weighted error probability used in AdaBoost.
 
 \section{A Note on the Complexity of the Codec Classifier Decoder}
 
