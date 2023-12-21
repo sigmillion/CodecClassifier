@@ -1,6 +1,9 @@
 function err = build_decoder(enc,dataset,T)
 if nargin == 2
     T = enc.T
+    show = 1;
+else
+    show = 0;
 end
 
 enc.dec = dictionary([],{});
@@ -63,3 +66,18 @@ for i=1:dataset.N
 end
 err = err / dataset.N;
 fprintf('Dictionary size = %d\n',numEntries(enc.dec));
+
+if show
+    ent = entries(enc.dec,'struct');
+    for i=1:numEntries(enc.dec)
+        c = ent(i).Key;
+        v = ent(i).Value;
+        p = v{1}{1};
+        n = v{1}{2};
+        l = v{1}{3};
+        fprintf('%s, %5.4f, %5.4f, %5.4f, %6d, %d\n',dec2bin(c,enc.T),p(1), p(2), p(3), n, l);
+        % Could also parse the codeword bits and use the encoder
+        % thresholds to determine the rectangle for each
+        % codewords.  It's a bit more code that I'll come back to later.
+    end
+end
