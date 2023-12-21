@@ -343,6 +343,41 @@ This is something like $k$ nearest neighbors, but it takes a structured approach
 
 How could we adapt the mutual information splitting to make local spilts?  We could adopt a trust region approach and only trust the split in a local region of feature space.  This is essentially what the rectangle bubble growing approach above does.  The bubble is the trust region for the classifier.
 
+\section{Experimental Results with MNIST}
+
+I modified my Matlab code to scan through a list of thresholds instead of looking at all possible splits.  This change makes the algorithm more efficient when working with 8-bit pixel image data such as with MNIST.  I tested the modification out on 2D data.  Then I took the second step to load the MNIST data (784D) and processed it through the algorithm.  I decimated the dataset by 100 from 60,000 points down to 600 points so that the method would run quickly.  Then I ran it.  I'll include the output below.  The bottom line is that on this 10-class dataset with 600 training points, the method achieved zero error on the training data after splitting 14 times.  The results below show the size of the decoder dictionary, the error rate, the splitting index and the threshold at the end of each iteration.  Notice the training error decreases monotically.  I then loaded the full 60,000 training set and ran it through and this resulted in an error rate of 0.1808.  This is not surprising.  The training set size is small.  I need to run this again with the full training set available from MNIST and then use the MNIST test set to evaluate the error.  I could also use $k$-fold cross-validation.  At any rate, I think this is a good result so far.  I also saved the relative frequency results for each codeword/rectangle, but I have not analyzed them yet.
+
+\begin{verbatim}
+Dictionary size = 2
+  1: error rate = 0.803333, x[627] <= 6.500000
+Dictionary size = 4
+  2: error rate = 0.663333, x[351] <= 35.500000
+Dictionary size = 8
+  3: error rate = 0.591667, x[544] <= 17.500000
+Dictionary size = 16
+  4: error rate = 0.490000, x[346] <= 3.500000
+Dictionary size = 32
+  5: error rate = 0.410000, x[432] <= 9.500000
+Dictionary size = 63
+  6: error rate = 0.331667, x[298] <= 4.500000
+Dictionary size = 114
+  7: error rate = 0.255000, x[660] <= 19.500000
+Dictionary size = 193
+  8: error rate = 0.180000, x[211] <= 49.500000
+Dictionary size = 268
+  9: error rate = 0.116667, x[214] <= 12.500000
+Dictionary size = 342
+ 10: error rate = 0.071667, x[496] <= 25.500000
+Dictionary size = 397
+ 11: error rate = 0.036667, x[295] <= 55.500000
+Dictionary size = 433
+ 12: error rate = 0.015000, x[608] <= 0.500000
+Dictionary size = 459
+ 13: error rate = 0.003333, x[354] <= 135.500000
+Dictionary size = 483
+ 14: error rate = 0.000000, x[630] <= 0.500000
+ \end{verbatim}
+
 \bibliography{papers.bib}
 \bibliographystyle{IEEE}
 \end{document}
