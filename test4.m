@@ -50,15 +50,17 @@ dataset.y = dataset.y(1:N:end);
 dataset.N = dataset.N/N;
 
 % Perform encoding by applying AdaBoost algorithm using stumps
+if 0
 enc.T = 30; % Number of classifiers
 enc.t = zeros(enc.T,1); % Thresholds
 enc.f = zeros(enc.T,1); % Feature indexes
 enc.MI = zeros(enc.T,1); % Mutual information
 enc.dec = dictionary([],{}); % Decoder
 elem = {zeros(dataset.K,1), 0};
+end
 
 % Loop over weak classifiers
-for i=1:enc.T
+for i=10:enc.T % <<<===*********************** start at 1
     % Loop over dimensions
     bestmax = -inf;
     bestind = 0;

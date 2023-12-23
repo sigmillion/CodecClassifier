@@ -378,6 +378,41 @@ Dictionary size = 483
  14: error rate = 0.000000, x[630] <= 0.500000
  \end{verbatim}
 
+Here are the results with 6,000 training data instances.
+\begin{verbatim}
+Dictionary size = 2
+  1: error rate = 0.821500, x[598] <= 1.500000
+Dictionary size = 4
+  2: error rate = 0.687167, x[351] <= 125.500000
+Dictionary size = 8
+  3: error rate = 0.616667, x[544] <= 15.500000
+Dictionary size = 16
+  4: error rate = 0.528500, x[434] <= 1.500000
+Dictionary size = 32
+  5: error rate = 0.472833, x[374] <= 0.500000
+Dictionary size = 64
+  6: error rate = 0.416500, x[657] <= 1.500000
+Dictionary size = 127
+  7: error rate = 0.373333, x[574] <= 67.500000
+Dictionary size = 250
+  8: error rate = 0.326167, x[264] <= 3.500000
+Dictionary size = 474
+  9: error rate = 0.272167, x[269] <= 27.500000
+Dictionary size = 811
+ 10: error rate = 0.230333, x[181] <= 27.500000
+Dictionary size = 1279
+ 11: error rate = 0.187667, x[355] <= 21.500000
+Dictionary size = 1800
+ 12: error rate = 0.134333, x[212] <= 92.500000
+Dictionary size = 2372
+ 13: error rate = 0.094333, x[459] <= 45.500000
+Dictionary size = 2965
+ 14: error rate = 0.067167, x[550] <= 50.500000
+Dictionary size = 3444
+ 15: error rate = 0.043833, x[262] <= 92.500000
+\end{verbatim}
+The error rate with these 15 classifiers on the full 60,000 dataset is 0.1255.  This is getting better with a larger dataset used in training.  This is not surprising and consistent with general principles for machine learning.  It's the dataset used in training that teaches the learner about the problem it is supposed to learn.
+
 \bibliography{papers.bib}
 \bibliographystyle{IEEE}
 \end{document}
