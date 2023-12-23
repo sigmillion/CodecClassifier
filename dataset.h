@@ -15,8 +15,8 @@ typedef struct dimdata {
 int comp(const void *a, const void *b) {
     dimdata* a1 = (dimdata*)a;
     dimdata* b1 = (dimdata*)b;
-    if ((*a1).x > (*b1).x) return -1;
-    else if ((*a1).x < (*b1).x) return 1;
+    if ((*a1).x > (*b1).x) return 1;
+    else if ((*a1).x < (*b1).x) return -1;
     else return 0;
 }
 
