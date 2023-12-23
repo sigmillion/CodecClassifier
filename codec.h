@@ -3,13 +3,10 @@
 
 #include <iostream>
 #include <unordered_map>
-#include <bitset>
 #include <vector>
 #include <string>
 #include <cmath>
 #include "dataset.h"
-
-#define NUM_CLASSIFIERS 30
 
 // Class for elements of decoder dictionary
 class rect {
@@ -23,9 +20,6 @@ class rect {
   ~rect() {}
   void reset(void) { std::fill(prob.begin(), prob.end(), 0); }
 };
-
-typedef std::bitset<NUM_CLASSIFIERS> codeword;
-typedef std::hash<codeword> hash;
 
 class codec {
  public:
@@ -60,8 +54,9 @@ class codec {
   }
 
   void train(dataset & ds) {
-    codeword c;
-
+    //codeword c;
+    unsigned char y;
+    
     // Create empty dictionaries
     std::vector<int> Mj(ds.num_classes); // Use an array
     std::unordered_map<codeword,int,hash> Nc; // Use a dictionary
@@ -71,18 +66,6 @@ class codec {
       Ncj.push_back(unmap);
     }
 
-    if(0) {
-    // Test code
-    codeword c0{28};
-    codeword c1{2397};
-    codeword c2{234};
-    Nc.insert({c0,25});
-    Nc.insert({c1,81});
-    Nc[c2] = 23487;
-    printf("%lu\n",Nc.size());
-    exit(0);
-    }
-    
     // Loop over classifiers
     for(int i=0; i<num_classifiers; i++) {
       printf("Working on classifier %3d.\n",i);
@@ -92,7 +75,7 @@ class codec {
 
       // Loop over dimensions
       for(int d=0; d<ds.num_dimensions; d++) {
-      //for(int d=351; d<352; d++) {
+	//for(int d=351; d<352; d++) {
 
 	// Initialize all the array and dictionary data structures
 	Nc.clear(); // Clear the dictionary
@@ -103,13 +86,15 @@ class codec {
 
 	// Initialize the dictionary counts
 	for(int s=0, xs=0; s<ds.num_instances; s++, xs+=ds.num_dimensions) {
-	  // Get codeword index for each data point
-	  c.reset();
-	  for(int j=0; j<i; j++) { if(ds.X[xs+f[j]] > t[j]) { c[j] = 1; } }
+	  // Compute codeword index for each data point
+	  //c.reset();
+	  //for(int j=0; j<i; j++) { if(ds.X[xs+f[j]] > t[j]) { c[j] = 1; } }
+
+	  codeword & c = ds.C[s];
 	  
 	  // Append a 1 to the codeword
 	  c[i] = 1;
-	  unsigned char y = ds.y[s];
+	  y = ds.y[s];
 	  // Index the dictionaries and increment counts
 	  auto it = Nc.find(c);
 	  if(it == Nc.end()) {
@@ -137,15 +122,18 @@ class codec {
 	unsigned char thethresh = 0;
 	std::vector<double> MI(ds.num_splits,0.0); // Mutual information array
         int s1 = 0;
+	int s1srt = ds.Xyi[s1].i;
 	for(int s0=0; s0<ds.num_splits; s0++) {
-	  while(s1 < ds.num_instances && ds.X[ds.Xyi[s1].i*ds.num_dimensions + d] <= s0) {
-	    // 1. Get codeword for x(s)
-	    c.reset();
-	    for(int j=0; j<i; j++) { if(ds.X[ds.Xyi[s1].i*ds.num_dimensions + f[j]] > t[j]) { c[j] =1; } }
+	  while(s1 < ds.num_instances && ds.X[s1srt*ds.num_dimensions + d] <= s0) {
+	    // 1. Compute codeword for x(s)
+	    //c.reset();
+	    //for(int j=0; j<i; j++) { if(ds.X[ds.Xyi[s1].i*ds.num_dimensions + f[j]] > t[j]) { c[j] =1; } }
+
+	    codeword & c = ds.C[s1srt];
 
 	    // 2. Append a 1 to the codeword
 	    c[i] = 1;
-	    unsigned char y = ds.y[ds.Xyi[s1].i];
+	    y = ds.y[s1srt];
 
 	    // 3. Index the dictionaries and decrement the counts
 	    if(--Nc[c] == 0) { Nc.erase(c); } // Erase dictionary element
@@ -171,11 +159,9 @@ class codec {
 	    } else {
 	      (it->second)++;
 	    }
-            //Nc[c]++;
-	    //Mj[y]++;
-	    //Ncj[y][c]++;
 
 	    s1++;
+	    s1srt = ds.Xyi[s1].i;
 	  } // Loop over same values
 
 	  if(0) {
@@ -197,7 +183,7 @@ class codec {
 	  for(int j=0; j<ds.num_classes; j++) {
 	    int Mjval = Mj[j];
 	    for(auto it = Ncj[j].begin(); it != Ncj[j].end(); it++) {
-	      c = it->first;
+	      codeword c = it->first;
 	      int Ncjval = it->second;
 	      int Ncval = Nc[c];
 	      double wc = ((double)Ncval)/ds.num_instances;
@@ -212,11 +198,13 @@ class codec {
 	    } // Loop over dictionary
 	  } // Loop over dictionary array
 	  //printf("d = %3d, MI[%3d] = %f\n",d,s0,MI[s0]);
+	  
 	  if(MI[s0] > themax) {
 	    themax = MI[s0];
 	    thethresh = s0;
 	  }
 	} // Loop over splits
+
 	if(themax > bestmax) {
 	  bestmax = themax;
 	  bestind = d;
@@ -226,28 +214,42 @@ class codec {
       // Build the weak learner
       f[i] = bestind;
       t[i] = bestthresh;
+      printf("i = %3d, X[%3d] <= %3d\n",i,f[i],t[i]);
       e[i] = build_decoder(ds,i);
       printf("Size of decoder dictionary %lu.\n",dec.size());
+
+      // char dumb; std::cin >> dumb;
+	
     } // End loop over classifiers
   } // End training function
 
   double build_decoder(dataset & ds, int i) {
-    codeword c;
+    //codeword c;
+    unsigned char y;
     dec.clear(); // Clear the dictionary
     
     // Loop over instances in dataset
     for(int s=0, xs=0; s<ds.num_instances; s++, xs+=ds.num_dimensions) {
-      // Get codeword index for each data point
-      c.reset();
-      for(int j=0; j<i; j++) { if(ds.X[xs+f[j]] > t[j]) { c[j] = 1; } }
-      unsigned char y = ds.y[s];
+      // Compute codeword index for each data point
+      //c.reset();
+      //for(int j=0; j<=i; j++) { if(ds.X[xs+f[j]] > t[j]) { c[j] = 1; } }
+      // Update codeword.  The old way of computing the codeword was
+      // computationally very wasteful.  Now we just look it up and set a bit.
+      codeword & c = ds.C[s];
+      if(ds.X[xs+f[i]] > t[i]) {
+	//ds.C[s][i] = 1;
+	c[i] = 1;
+      }
+      y = ds.y[s];
 
+      //auto it = dec.find(ds.C[s]);
       auto it = dec.find(c);
       if(it == dec.end()) {
 	rect r(ds.num_classes);
 	r.num = 1;
 	r.label = y;
 	r.prob[y] = 1;
+	//dec.insert({ds.C[s],r});
 	dec.insert({c,r});
       } else {
 	it->second.num++;
