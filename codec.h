@@ -1,7 +1,7 @@
 #ifndef CODEC_H
 #define CODEC_H
 
-#include <iostream>
+#include <stdio.h>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -23,6 +23,8 @@ class rect {
 
 class codec {
  public:
+  // Generic parameters
+  int num_classes;
   // Encoder parameters
   int num_classifiers;
   unsigned char* t; // thresholds 0, 1, 2, ..., 254
@@ -32,6 +34,81 @@ class codec {
   // Decoder parameters
   std::unordered_map<codeword, rect, hash> dec;
 
+  void save(char* filename, int num) {
+    FILE* fid = fopen(filename,"wb");
+    // Write out encoder parameters
+    fwrite(&num_classifiers,sizeof(num_classifiers),1,fid); // Number of classifiers in the container
+    fwrite(&num,sizeof(num),1,fid); // Number of classifiers written
+    fwrite(f,sizeof(f[0]),num,fid); // Feature indexes
+    fwrite(t,sizeof(t[0]),num,fid); // Thresholds
+    fwrite(e,sizeof(e[0]),num,fid); // Errors
+    // Write out decoder parameters
+    fwrite(&num_classifiers,sizeof(num_classifiers),1,fid); // Number of bits in the codeword
+    num = dec.size(); // Size of dictionary
+    fwrite(&num,sizeof(num),1,fid); // Size of dictionary
+    for(auto it : dec) {
+      std::string cs = it.first.to_string(); // String version of codeword
+      if(cs.size() != num_classifiers) {
+	fprintf(stderr,"Houston, we have a problem with codeword strings. %lu %d\n",cs.length(),num_classifiers);
+      }
+      fwrite(cs.c_str(),sizeof(char),num_classifiers,fid);
+      num = num_classes; // Number of classes = size of probability array
+      fwrite(&num,sizeof(num),1,fid); // Size probability array
+      fwrite(it.second.prob.data(),sizeof(int),num_classes,fid); // Probability array
+      num = it.second.num; // Total points assigned to this rectangle
+      fwrite(&num,sizeof(num),1,fid); // Total points assigned to this rectangle
+      unsigned char val = it.second.label; // Label of this rectangle
+      fwrite(&val,sizeof(val),1,fid); // Label of this rectangle
+    }
+    fclose(fid);
+  } // End of save function
+
+  void load(char* filename) {
+    // This function assumes that the data structure is starting out "fresh",
+    // and that no clearing of data structures is needed.  This function
+    // goes directly and loads and fills an empty (assumption) data structure.
+    FILE* fid = fopen(filename,"rb");
+    // Read in encoder parameters
+    int num;
+    fread(&num,sizeof(num),1,fid); // Number of classifiers in container
+    num_classifiers = num;         // Number of classifiers in container
+    f = new int [num];
+    t = new unsigned char [num];
+    e = new float [num];
+    fread(&num,sizeof(num),1,fid); // Number of classifiers to read
+    fread(f,sizeof(f[0]),num,fid);
+    fread(t,sizeof(t[0]),num,fid);
+    fread(e,sizeof(e[0]),num,fid);
+    
+    // Write out decoder parameters
+    int num_bits;
+    fread(&num_bits,sizeof(num_bits),1,fid); // Number of bits in the codeword
+    char* cs = new char [num_bits]; // Allocate codeword string
+    if(num_bits != NUM_CLASSIFIERS) {
+      fprintf(stderr,"Houston, it's over.\n");
+    }
+    fread(&num,sizeof(num),1,fid); // Size of dictionary
+    for(int i=0; i<num; i++) {
+      fread(cs,sizeof(char),num_bits,fid);
+      codeword c; // Initialized to all zero bits
+      for(int j=0; j<num_bits; j++) {
+	if(cs[j] == '1') {
+	  c[j] = 1; // Set the appropriate bits to 1
+	}
+      }
+      fread(&num_classes,sizeof(num_classes),1,fid); // Size of probability array
+      rect r(num_classes);
+      fread(r.prob.data(),sizeof(int),num_classes,fid);
+      fread(&(r.num),sizeof(r.num),1,fid);
+      fread(&(r.label),sizeof(r.label),1,fid);
+
+      // Add this rect to decoder dictionary
+      dec.insert({c,r});
+    }
+    delete [] cs;
+    fclose(fid);
+  } // End of load function
+  
   codec() {
     t = NULL;
     f = NULL;
@@ -54,6 +131,8 @@ class codec {
   }
 
   void train(dataset & ds) {
+    num_classes = ds.num_classes;
+    
     //codeword c;
     unsigned char y;
     
@@ -163,7 +242,7 @@ class codec {
 	    s1srt = ds.Xyi[s1].i;
 	  } // Loop over same values
 
-	  if(0) {
+#if 0
 	  // Analyze the dictionaries
 	  for(int k=0; k<ds.num_classes; k++) {
 	    printf("Mj[%2d] = %d\n",k,Mj[k]);
@@ -176,7 +255,7 @@ class codec {
 	      std::cout << s0 << " " << k << " = " << kk.first << " | " << kk.second << '\n';
 	    }
 	  }
-	  }
+#endif
 	  
           // 6. Compute mutual information
 	  for(int j=0; j<ds.num_classes; j++) {

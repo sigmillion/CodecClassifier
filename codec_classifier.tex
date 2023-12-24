@@ -413,6 +413,59 @@ Dictionary size = 3444
 \end{verbatim}
 The error rate with these 15 classifiers on the full 60,000 dataset is 0.1255.  This is getting better with a larger dataset used in training.  This is not surprising and consistent with general principles for machine learning.  It's the dataset used in training that teaches the learner about the problem it is supposed to learn.
 
+\section{C++ Experiments}
+
+Matlab was running very slowly, so I recoded everything in C++.  The C++ version runs quite fast by comparison.  Here are the results, which you can see match exactly the Matlab version (aside from the 1 vs 0 based indexing), and the round down of the thresholds in the C++ version.
+
+\begin{verbatim}
+Dictionary size = 2
+  0: error rate = 0.821500, x[597] <=   1
+Dictionary size = 4
+  1: error rate = 0.687167, x[350] <= 125
+Dictionary size = 8
+  2: error rate = 0.616667, x[543] <=  15
+Dictionary size = 16
+  3: error rate = 0.528500, x[433] <=   1
+Dictionary size = 32
+  4: error rate = 0.472833, x[373] <=   0
+Dictionary size = 64
+  5: error rate = 0.416500, x[656] <=   1
+Dictionary size = 127
+  6: error rate = 0.373333, x[573] <=  67
+Dictionary size = 250
+  7: error rate = 0.326167, x[263] <=   3
+Dictionary size = 474
+  8: error rate = 0.272167, x[268] <=  27
+Dictionary size = 811
+  9: error rate = 0.230333, x[180] <=  27
+Dictionary size = 1279
+ 10: error rate = 0.187667, x[354] <=  21
+Dictionary size = 1800
+ 11: error rate = 0.134333, x[211] <=  92
+Dictionary size = 2372
+ 12: error rate = 0.094333, x[458] <=  45
+Dictionary size = 2965
+ 13: error rate = 0.067167, x[549] <=  50
+Dictionary size = 3444
+ 14: error rate = 0.043833, x[261] <=  92
+Dictionary size = 3855
+ 15: error rate = 0.027500, x[547] <= 136
+Dictionary size = 4183
+ 16: error rate = 0.016333, x[439] <=  53
+Dictionary size = 4456
+ 17: error rate = 0.008333, x[242] <=  16
+Dictionary size = 4656
+ 18: error rate = 0.003333, x[265] <= 141
+Dictionary size = 4780
+ 19: error rate = 0.001167, x[347] <= 122
+Dictionary size = 4923
+ 20: error rate = 0.000333, x[460] <= 147
+Dictionary size = 4990
+ 21: error rate = 0.000000, x[401] <=   0
+\end{verbatim}
+
+The C++ version runs fast so that I could drive the training error to zero, which occurred on 6,000 training instances after 22 iterations.  Amazing!   I still need to run the whole 60,000 training set through to see the error rate on instances not seen during training.  I'm working on code to do that, to save and load models, and to do the interpretation of the rectangles stored in the decoder data structure.
+
 \bibliography{papers.bib}
 \bibliographystyle{IEEE}
 \end{document}
