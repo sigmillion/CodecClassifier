@@ -68,7 +68,6 @@ class codec {
 
     // Loop over classifiers
     for(int i=0; i<num_classifiers; i++) {
-      printf("Working on classifier %3d.\n",i);
       double bestmax = -1e6;
       int bestind = 0;
       unsigned char bestthresh = 0;
@@ -214,17 +213,14 @@ class codec {
       // Build the weak learner
       f[i] = bestind;
       t[i] = bestthresh;
-      printf("i = %3d, X[%3d] <= %3d\n",i,f[i],t[i]);
-      e[i] = build_decoder(ds,i);
-      printf("Size of decoder dictionary %lu.\n",dec.size());
-
-      // char dumb; std::cin >> dumb;
-	
+      build_decoder(ds,i);
+      e[i] = compute_error(ds,i);
+      printf("Dictionary size = %lu\n",dec.size());
+      printf("%3d: error rate = %f, x[%3d] <= %3d\n",i,e[i],f[i],t[i]);
     } // End loop over classifiers
   } // End training function
 
-  double build_decoder(dataset & ds, int i) {
-    //codeword c;
+  void build_decoder(dataset & ds, int i) {
     unsigned char y;
     dec.clear(); // Clear the dictionary
     
@@ -247,18 +243,34 @@ class codec {
       if(it == dec.end()) {
 	rect r(ds.num_classes);
 	r.num = 1;
-	r.label = y;
 	r.prob[y] = 1;
 	//dec.insert({ds.C[s],r});
 	dec.insert({c,r});
       } else {
 	it->second.num++;
-	it->second.label = y;
 	it->second.prob[y]++;
       }
     } // End loop over instances in dataset
-    return 0.0; // Return error
   } // End build_decoder function
+
+  double compute_error(dataset & ds, int i) {
+    int err = 0;
+    // Loop over decoder dictionary entries
+    for(auto it : dec) {
+      // Choose the class label by maximum count
+      unsigned char y = 0;
+      int themax = it.second.prob[y];
+      for(int j=1; j<ds.num_classes; j++) {
+	if(it.second.prob[j] > themax) {
+	  themax = it.second.prob[j];
+	  y = j;
+	}
+      }
+      it.second.label = y;
+      err += it.second.num - it.second.prob[y];
+    } // End loop over decoder dictionary entries
+    return ((double)err) / ds.num_instances;
+  } // End of compute_error function
 };
 
 #endif
