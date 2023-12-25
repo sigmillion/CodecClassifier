@@ -6,8 +6,8 @@
 #include <bitset>
 #include <functional>
 
-#define NUM_CLASSIFIERS 30
-typedef std::bitset<NUM_CLASSIFIERS> codeword;
+#define MAX_NUM_BITS 30
+typedef std::bitset<MAX_NUM_BITS> codeword;
 typedef std::hash<codeword> hash;
 
 // Structure used for sorting
