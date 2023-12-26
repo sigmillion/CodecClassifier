@@ -55,7 +55,7 @@ class dataset {
   
   dataset() { init(); }
 
-  dataset(const char* datafile, const char* labelfile, int num_instances_to_load=60000) {
+  dataset(const char* datafile, const char* labelfile, int num_instances_to_load=10000) {
     init(); // Set up all the initial parameters
     load_features_decimated(datafile, num_instances_to_load);
     load_labels_decimated(labelfile, num_instances_to_load);
@@ -77,7 +77,7 @@ class dataset {
     qsort(Xyi,num_instances,sizeof(dimdata),comp);
   }
   
-  void load_features(const char *filename, int num_instances_to_load=60000) {
+  void load_features(const char *filename, int num_instances_to_load=10000) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
@@ -102,7 +102,7 @@ class dataset {
     fclose(fid);
   }
 
-  void load_features_decimated(const char *filename, int num_instances_to_load=60000) {
+  void load_features_decimated(const char *filename, int num_instances_to_load=10000) {
     
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
@@ -117,7 +117,7 @@ class dataset {
     // Set up for loading a decimated data set as is done in Matlab
     // so that I can compare these results to the Matlab results.
     num_instances = num_instances_to_load;
-    int num_skip = 60000/num_instances - 1;
+    int num_skip = 10000/num_instances - 1;
     X = new unsigned char[num_instances * num_dimensions];
     Xyi = new dimdata[num_instances];
     C = new codeword[num_instances];
@@ -134,7 +134,7 @@ class dataset {
     fclose(fid);
   }
 
-  void load_labels(const char *filename, int num_instances_to_load=60000) {
+  void load_labels(const char *filename, int num_instances_to_load=10000) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
@@ -157,7 +157,7 @@ class dataset {
     fclose(fid);
   }
 
-  void load_labels_decimated(const char *filename, int num_instances_to_load=60000) {
+  void load_labels_decimated(const char *filename, int num_instances_to_load=10000) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
@@ -169,7 +169,7 @@ class dataset {
 
     // Allocate memory
     num_instances = num_instances_to_load;
-    int num_skip = 60000/num_instances - 1;
+    int num_skip = 10000/num_instances - 1;
     y = new unsigned char[num_instances];
 
     // Read

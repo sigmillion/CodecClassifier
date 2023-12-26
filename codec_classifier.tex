@@ -540,6 +540,88 @@ Test error rate = 0.009033, 	miss rate = 0.690033
 \end{verbatim}
 What is interesting (and needs more investigation) is that the test error decreases but the decoder dictionary miss rate increases dramatically.
 
+Here's some results with 10k training samples and 10k test samples from the official test set.
+
+\begin{verbatim}
+Training set size = 10000
+Testing  set size = 10000
+Dictionary size = 2
+  0: error rate = 0.813000, x[155] <=   0
+Test error rate = 0.812600, 	miss rate = 0.000000
+Dictionary size = 4
+  1: error rate = 0.707000, x[461] <=   1
+Test error rate = 0.712700, 	miss rate = 0.000000
+Dictionary size = 8
+  2: error rate = 0.564800, x[378] <=  96
+Test error rate = 0.582100, 	miss rate = 0.000000
+Dictionary size = 16
+  3: error rate = 0.479200, x[346] <=   0
+Test error rate = 0.499900, 	miss rate = 0.000000
+Dictionary size = 32
+  4: error rate = 0.422400, x[568] <=   0
+Test error rate = 0.439700, 	miss rate = 0.000000
+Dictionary size = 64
+  5: error rate = 0.371800, x[656] <=   0
+Test error rate = 0.404100, 	miss rate = 0.000000
+Dictionary size = 128
+  6: error rate = 0.325500, x[238] <=   7
+Test error rate = 0.356800, 	miss rate = 0.000000
+Dictionary size = 251
+  7: error rate = 0.287800, x[514] <=  16
+Test error rate = 0.318200, 	miss rate = 0.000200
+Dictionary size = 474
+  8: error rate = 0.255500, x[428] <=   0
+Test error rate = 0.285800, 	miss rate = 0.003900
+Dictionary size = 864
+  9: error rate = 0.216000, x[298] <=   9
+Test error rate = 0.270900, 	miss rate = 0.011500
+Dictionary size = 1384
+ 10: error rate = 0.174300, x[321] <=  43
+Test error rate = 0.235900, 	miss rate = 0.033100
+Dictionary size = 2082
+ 11: error rate = 0.139100, x[437] <=  47
+Test error rate = 0.204500, 	miss rate = 0.085400
+Dictionary size = 2838
+ 12: error rate = 0.100900, x[268] <=  76
+Test error rate = 0.165100, 	miss rate = 0.140400
+Dictionary size = 3704
+ 13: error rate = 0.072600, x[575] <=  42
+Test error rate = 0.130300, 	miss rate = 0.217300
+Dictionary size = 4421
+ 14: error rate = 0.049500, x[212] <= 113
+Test error rate = 0.096200, 	miss rate = 0.288700
+Dictionary size = 5212
+ 15: error rate = 0.032000, x[206] <=  38
+Test error rate = 0.072000, 	miss rate = 0.376400
+Dictionary size = 5817
+ 16: error rate = 0.021000, x[492] <= 157
+Test error rate = 0.048800, 	miss rate = 0.451300
+Dictionary size = 6326
+ 17: error rate = 0.013300, x[217] <=   4
+Test error rate = 0.036700, 	miss rate = 0.508800
+Dictionary size = 6816
+ 18: error rate = 0.008400, x[209] <= 156
+Test error rate = 0.026600, 	miss rate = 0.565100
+Dictionary size = 7233
+ 19: error rate = 0.004400, x[431] <= 133
+Test error rate = 0.017300, 	miss rate = 0.619900
+Dictionary size = 7547
+ 20: error rate = 0.002600, x[606] <=  27
+Test error rate = 0.011400, 	miss rate = 0.668700
+Dictionary size = 7839
+ 21: error rate = 0.001200, x[382] <= 161
+Test error rate = 0.006600, 	miss rate = 0.710200
+Dictionary size = 7953
+ 22: error rate = 0.000500, x[176] <=  29
+Test error rate = 0.005100, 	miss rate = 0.730400
+Dictionary size = 8076
+ 23: error rate = 0.000100, x[322] <= 184
+Test error rate = 0.004700, 	miss rate = 0.741400
+Dictionary size = 8231
+ 24: error rate = 0.000000, x[495] <= 236
+Test error rate = 0.003600, 	miss rate = 0.764500
+\end{verbatim}
+
 \bibliography{papers.bib}
 \bibliographystyle{IEEE}
 \end{document}
