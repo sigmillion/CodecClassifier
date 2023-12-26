@@ -19,6 +19,9 @@ int main(int argc, char *argv[]) {
   for(int i=0; i<num_classifiers; i++) {
     C.train_next(DS);
     C.compute_test_error(DS_test);
+    C.build_rectangles();
+    C.print();
+        
   } // End loop over classifiers
   
   return 0;

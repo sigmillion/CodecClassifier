@@ -25,6 +25,12 @@ typedef std::pair<unsigned char, unsigned char> lims;
 class rect {
  public:
   std::unordered_map<int, lims> dims; // Dimensions
+  void print(void) {
+    for(auto & it : dims) {
+      printf("Dim %3d: (%3d,%3d)\n",it.first,it.second.first,it.second.second);
+    }
+    printf("================================================\n");
+  }
 };
 
 // Class for elements of decoder dictionary
@@ -37,8 +43,17 @@ class rect_stat {
 
   rect_stat() : r(NULL) {}
   rect_stat(int num) : prob(num, 0), r(NULL) {}
-  ~rect_stat() {}
+  ~rect_stat() { if(r != NULL) { delete r; }
+  }
   void reset(void) { std::fill(prob.begin(), prob.end(), 0); }
+  void print(void) {
+    if(r != NULL) {
+      printf("Label=%d, [",label);
+      for(auto & p : prob) { printf("%4d ",p); }
+      printf("], %6d\n",num);
+      r->print();
+    }
+  }
 };
 
 class codec {
@@ -58,6 +73,19 @@ class codec {
   std::unordered_map<codeword,int,hash> Nc; // Use a dictionary
   std::vector<std::unordered_map<codeword,int,hash>> Ncj; // Use an array of dictionaries
 
+  void print(void) {
+    printf("Encoder ==================================\n");
+    int i = 0;
+    for(auto & e : enc) {
+      printf("%4d: x[%4d] <= %3d\n",i,e.f,e.t);
+      i++;
+    }
+    printf("Decoder ==================================\n");
+    for(auto & d : dec) {
+      printf("cw = %s\n",d.first.to_string().c_str());
+      d.second.print();
+    }
+  }
   
   void save(char* filename, int num) {
     FILE* fid = fopen(filename,"wb");
@@ -398,19 +426,16 @@ class codec {
 
   void build_rectangles(void) {
     for(auto & it : dec) { // Loop over the dictionary elements
-      rect r; // Make a new rectangle for each dictionary elememnt
+      rect *r = new rect; // Make a new rectangle for each dictionary elememnt
       for(int i=0; i<enc.size(); i++) { // Loop over bits--one for each encoder
-	lims p0 = (0, enc[i].t);    // Interval for this threshold - low side
-	lims p1 = (enc[i].t+1,255); // Interval for this threshold - high side
-
-	auto l = r.dims.find(enc[i].f); // Is this feature index in the dims dictionary?
-	if(l == r.dims.end()) { // Dimension does not exist
+	auto l = r->dims.find(enc[i].f); // Is this feature index in the dims dictionary?
+	if(l == r->dims.end()) { // Dimension does not exist
 	  if(it.first[i]) { // 1 bit
-	    lims q1 = (enc[i].t+1, 255); // Make a generic limits pair
-	    r.dims.insert({enc[i].f,q1});
+	    lims q1 = lims(enc[i].t+1, 255); // Make a generic limits pair
+	    r->dims.insert({enc[i].f,q1});
 	  } else {
-	    lims q0 = (0, enc[i].t); // Make a generic limits pair
-	    r.dims.insert({enc[i].f,q0});
+	    lims q0 = lims(0, enc[i].t); // Make a generic limits pair
+	    r->dims.insert({enc[i].f,q0});
 	  }
 	} else { // Dimension does exist
 	  // Compute the intersection
@@ -421,10 +446,11 @@ class codec {
 	    /// Upper limit is the minimum of two arguments
 	    l->second.second = l->second.second < enc[i].t ? l->second.second : enc[i].t;
 	  }
-	}
-      }
-    }
-  }
+	} // End if dimension exists
+      } // End loop over bits
+      it.second.r = r;
+    } // End loop over decoder dictionary elements
+  } // End build_rectangles function
   
 };
 
