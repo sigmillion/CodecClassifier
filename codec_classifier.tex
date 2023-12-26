@@ -466,6 +466,80 @@ Dictionary size = 4990
 
 The C++ version runs fast so that I could drive the training error to zero, which occurred on 6,000 training instances after 22 iterations.  Amazing!   I still need to run the whole 60,000 training set through to see the error rate on instances not seen during training.  I'm working on code to do that, to save and load models, and to do the interpretation of the rectangles stored in the decoder data structure.
 
+Here's another example from the C++ version where I tested the classifier on the full 60,000 test set after each training iteration.  The test error and the miss rate are presented in the results below until iteration 21.
+
+\begin{verbatim}
+Training set size = 6000
+Testing  set size = 60000
+Dictionary size = 2
+  0: error rate = 0.821500, x[597] <=   1
+Test error rate = 0.833033, 	miss rate = 0.000000
+Dictionary size = 4
+  1: error rate = 0.687167, x[350] <= 125
+Test error rate = 0.704667, 	miss rate = 0.000000
+Dictionary size = 8
+  2: error rate = 0.616667, x[543] <=  15
+Test error rate = 0.639667, 	miss rate = 0.000000
+Dictionary size = 16
+  3: error rate = 0.528500, x[433] <=   1
+Test error rate = 0.537017, 	miss rate = 0.000000
+Dictionary size = 32
+  4: error rate = 0.472833, x[373] <=   0
+Test error rate = 0.499367, 	miss rate = 0.000000
+Dictionary size = 64
+  5: error rate = 0.416500, x[656] <=   1
+Test error rate = 0.465733, 	miss rate = 0.000000
+Dictionary size = 127
+  6: error rate = 0.373333, x[573] <=  67
+Test error rate = 0.407733, 	miss rate = 0.000217
+Dictionary size = 250
+  7: error rate = 0.326167, x[263] <=   3
+Test error rate = 0.373033, 	miss rate = 0.001017
+Dictionary size = 474
+  8: error rate = 0.272167, x[268] <=  27
+Test error rate = 0.336567, 	miss rate = 0.007133
+Dictionary size = 811
+  9: error rate = 0.230333, x[180] <=  27
+Test error rate = 0.310417, 	miss rate = 0.027433
+Dictionary size = 1279
+ 10: error rate = 0.187667, x[354] <=  21
+Test error rate = 0.270400, 	miss rate = 0.070617
+Dictionary size = 1800
+ 11: error rate = 0.134333, x[211] <=  92
+Test error rate = 0.206883, 	miss rate = 0.140300
+Dictionary size = 2372
+ 12: error rate = 0.094333, x[458] <=  45
+Test error rate = 0.162033, 	miss rate = 0.213500
+Dictionary size = 2965
+ 13: error rate = 0.067167, x[549] <=  50
+Test error rate = 0.118933, 	miss rate = 0.300767
+Dictionary size = 3444
+ 14: error rate = 0.043833, x[261] <=  92
+Test error rate = 0.087017, 	miss rate = 0.374117
+Dictionary size = 3855
+ 15: error rate = 0.027500, x[547] <= 136
+Test error rate = 0.064617, 	miss rate = 0.446700
+Dictionary size = 4183
+ 16: error rate = 0.016333, x[439] <=  53
+Test error rate = 0.044233, 	miss rate = 0.516933
+Dictionary size = 4456
+ 17: error rate = 0.008333, x[242] <=  16
+Test error rate = 0.029200, 	miss rate = 0.573617
+Dictionary size = 4656
+ 18: error rate = 0.003333, x[265] <= 141
+Test error rate = 0.019767, 	miss rate = 0.614533
+Dictionary size = 4780
+ 19: error rate = 0.001167, x[347] <= 122
+Test error rate = 0.013917, 	miss rate = 0.647600
+Dictionary size = 4923
+ 20: error rate = 0.000333, x[460] <= 147
+Test error rate = 0.010800, 	miss rate = 0.677083
+Dictionary size = 4990
+ 21: error rate = 0.000000, x[401] <=   0
+Test error rate = 0.009033, 	miss rate = 0.690033
+\end{verbatim}
+What is interesting (and needs more investigation) is that the test error decreases but the decoder dictionary miss rate increases dramatically.
+
 \bibliography{papers.bib}
 \bibliographystyle{IEEE}
 \end{document}

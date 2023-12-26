@@ -19,16 +19,25 @@ class stump {
   void reset(void) { me = -1e6; f = 0; t = 0; }
 };
 
-// Class for elements of decoder dictionary
+typedef std::pair<unsigned char, unsigned char> lims;
+
+// Class to manage rectangle construction
 class rect {
+ public:
+  std::unordered_map<int, lims> dims; // Dimensions
+};
+
+// Class for elements of decoder dictionary
+class rect_stat {
  public:
   std::vector<int> prob; // number of points from each class
   int num; // total number of points
   unsigned char label; // class label
+  rect* r; // Rectangle
 
-  rect() {}
-  rect(int num) : prob(num, 0) {}
-  ~rect() {}
+  rect_stat() : r(NULL) {}
+  rect_stat(int num) : prob(num, 0), r(NULL) {}
+  ~rect_stat() {}
   void reset(void) { std::fill(prob.begin(), prob.end(), 0); }
 };
 
@@ -42,7 +51,7 @@ class codec {
   // Error rate as encoder is grown
   
   // Decoder parameters
-  std::unordered_map<codeword, rect, hash> dec;
+  std::unordered_map<codeword, rect_stat, hash> dec;
 
   // Working variables/dictionaries for training (not saved or loaded)
   std::vector<int> Mj; // Use an array
@@ -65,7 +74,7 @@ class codec {
     fwrite(&num_bits,sizeof(num_bits),1,fid); // Number of bits in the codeword
     num = dec.size(); // Size of dictionary
     fwrite(&num,sizeof(num),1,fid); // Size of dictionary
-    for(auto it : dec) {
+    for(auto & it : dec) {
       std::string cs = it.first.to_string(); // String version of codeword
       if(cs.size() != num_classifiers) {
 	fprintf(stderr,"Houston, we have a problem with codeword strings. %lu %d\n",cs.length(),num_classifiers);
@@ -112,7 +121,7 @@ class codec {
 	}
       }
       fread(&num_classes,sizeof(num_classes),1,fid); // Size of probability array
-      rect r(num_classes);
+      rect_stat r(num_classes);
       fread(r.prob.data(),sizeof(int),num_classes,fid);
       fread(&(r.num),sizeof(r.num),1,fid);
       fread(&(r.label),sizeof(r.label),1,fid);
@@ -138,7 +147,9 @@ class codec {
 
   ~codec() {}
 
-  void init_dictionaries(dataset &ds, int i) {
+  void init_dictionaries(dataset &ds) {
+    int i = enc.size();
+    
     num_classes = ds.num_classes;
     // Initialize all the array and dictionary data structures
     Nc.clear(); // Clear the dictionary
@@ -172,7 +183,9 @@ class codec {
     } // End loop over instances (initialization of dictionary counts)
   }
 
-  stump sweep_thresholds(dataset &ds, int i, int d) {
+  stump sweep_thresholds(dataset &ds, int d) {
+    int i = enc.size();
+    
     num_classes = ds.num_classes;
     // Sweep over all the split points
     stump themax;
@@ -222,11 +235,11 @@ class codec {
       for(int k=0; k<ds.num_classes; k++) {
 	printf("Mj[%2d] = %d\n",k,Mj[k]);
       }
-      for(auto k: Nc) {
+      for(auto & k: Nc) {
 	std::cout << k.first << " | " << k.second << '\n';
       }
       for(int k=0; k<ds.num_classes; k++) {
-	for(auto kk: Ncj[k]) {
+	for(auto & kk: Ncj[k]) {
 	  std::cout << s0 << " " << k << " = " << kk.first << " | " << kk.second << '\n';
 	}
       }
@@ -262,8 +275,10 @@ class codec {
     return themax;
   }
 
-  void train_next(dataset &ds, int i) {
-    if(enc.size() >= MAX_NUM_BITS) {
+  void train_next(dataset &ds) {
+    int i = enc.size();
+    
+    if(i >= MAX_NUM_BITS) {
       fprintf(stderr,"ERROR: Need more bits!\n");
       return;
     }
@@ -274,19 +289,21 @@ class codec {
     for(int d=0; d<ds.num_dimensions; d++) {
 
       // Initialize the dictionary data structures to store counts for this dimension
-      init_dictionaries(ds,i);
+      init_dictionaries(ds);
 
       // Sort current dimension
       ds.sort_dimension(d);
 
-      stump themax = sweep_thresholds(ds,i,d);
+      stump themax = sweep_thresholds(ds,d);
 
       if(themax.me > bestmax.me) { bestmax = themax; }
     } // End loop over dimensions
     // Build the weak learner
+
+    // Encoder size grows by one
     enc.push_back(bestmax); // Save the best classifier by extending the encoder
-    build_decoder(ds,i); // Build the decoder
-    enc[i].me = compute_error(ds,i); // Save the error on the training set
+    build_decoder(ds); // Build the decoder
+    enc[i].me = compute_train_error(ds); // Save the error on the training set
     printf("Dictionary size = %lu\n",dec.size());
     printf("%3d: error rate = %f, x[%3d] <= %3d\n",i,enc[i].me,enc[i].f,enc[i].t);
   } // End train_next function
@@ -294,11 +311,13 @@ class codec {
   void train_batch(dataset & ds, int num_classifiers) {
     // Loop over classifiers
     for(int i=0; i<num_classifiers; i++) {
-      train_next(ds,i);
+      train_next(ds);
     } // End loop over classifiers
   } // End train_batch function
 
-  void build_decoder(dataset & ds, int i) {
+  void build_decoder(dataset & ds) {
+    int i = enc.size() - 1;
+    
     dec.clear(); // Clear the dictionary
     
     // Loop over instances in dataset
@@ -312,7 +331,7 @@ class codec {
 
       auto it = dec.find(c);
       if(it == dec.end()) {
-	rect r(ds.num_classes);
+	rect_stat r(ds.num_classes);
 	r.num = 1;
 	r.prob[y] = 1;
 	dec.insert({c,r});
@@ -323,24 +342,90 @@ class codec {
     } // End loop over instances in dataset
   } // End build_decoder function
 
-  double compute_error(dataset & ds, int i) {
+  double compute_train_error(dataset & ds) {
     int err = 0;
     // Loop over decoder dictionary entries
-    for(auto it : dec) {
+    for(auto & it : dec) {
       // Choose the class label by maximum count
       unsigned char y = 0;
       int themax = it.second.prob[y];
+
+      // Print the dictionary element
+      //printf("[%4d ",it.second.prob[0]);
+      
       for(int j=1; j<ds.num_classes; j++) {
+	//printf("%4d ",it.second.prob[j]);
+      
 	if(it.second.prob[j] > themax) {
 	  themax = it.second.prob[j];
 	  y = j;
 	}
       }
+
       it.second.label = y;
       err += it.second.num - it.second.prob[y];
+      //printf("], %5d, %d, %s\n",it.second.num,it.second.label,it.first.to_string().c_str());
     } // End loop over decoder dictionary entries
     return ((double)err) / ds.num_instances;
   } // End of compute_error function
+
+  double compute_test_error(dataset & ds) {
+    int err = 0;
+    int miss = 0;
+    // Loop over the dataset
+    for(int s=0, xs=0; s<ds.num_instances; s++, xs+=ds.num_dimensions) {
+      // Classify each feature vector and construct the codeword
+      codeword c;
+      int i = 0;
+      for(auto & e : enc) { if(ds.X[xs+e.f] > e.t) { c[i] = 1; } i++; }
+
+      // Look up the codeword in the decoder
+      auto d = dec.find(c);
+      if(d != dec.end()) {
+	//printf("%d =?= %d\n",d->second.label,ds.y[s]);
+	if(d->second.label != ds.y[s]) {
+	  err++;
+	}
+      } else {
+	miss++;
+      }
+    }
+    double err_rate = ((double)err) / ds.num_instances;
+    double miss_rate = ((double)miss) / ds.num_instances;
+    printf("Test error rate = %f, \tmiss rate = %f\n",err_rate,miss_rate);
+    return err_rate;
+  } // End of compute_test_error function
+
+  void build_rectangles(void) {
+    for(auto & it : dec) { // Loop over the dictionary elements
+      rect r; // Make a new rectangle for each dictionary elememnt
+      for(int i=0; i<enc.size(); i++) { // Loop over bits--one for each encoder
+	lims p0 = (0, enc[i].t);    // Interval for this threshold - low side
+	lims p1 = (enc[i].t+1,255); // Interval for this threshold - high side
+
+	auto l = r.dims.find(enc[i].f); // Is this feature index in the dims dictionary?
+	if(l == r.dims.end()) { // Dimension does not exist
+	  if(it.first[i]) { // 1 bit
+	    lims q1 = (enc[i].t+1, 255); // Make a generic limits pair
+	    r.dims.insert({enc[i].f,q1});
+	  } else {
+	    lims q0 = (0, enc[i].t); // Make a generic limits pair
+	    r.dims.insert({enc[i].f,q0});
+	  }
+	} else { // Dimension does exist
+	  // Compute the intersection
+	  if(it.first[i]) { // 1 bit
+	    // Lower limit is the maximum of two arguments
+	    l->second.first = l->second.first > enc[i].t+1 ? l->second.first : enc[i].t+1;
+	  } else {
+	    /// Upper limit is the minimum of two arguments
+	    l->second.second = l->second.second < enc[i].t ? l->second.second : enc[i].t;
+	  }
+	}
+      }
+    }
+  }
+  
 };
 
 #endif
