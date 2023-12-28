@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]) {
   // Instantiate a dataset and load the data
   dataset DS("/Users/Jake/Downloads/MNIST_ORG/train-images.idx3-ubyte",
-  "/Users/Jake/Downloads/MNIST_ORG/train-labels.idx1-ubyte",10000); // Load decimated
+	     "/Users/Jake/Downloads/MNIST_ORG/train-labels.idx1-ubyte",6000); // Load decimated
   //dataset DS_test("/Users/Jake/Downloads/MNIST_ORG/train-images.idx3-ubyte",
   //"/Users/Jake/Downloads/MNIST_ORG/train-labels.idx1-ubyte",60000); // Load everything
   //dataset DS("/Users/Jake/Downloads/MNIST_ORG/train-images.idx3-ubyte",
@@ -21,11 +21,12 @@ int main(int argc, char *argv[]) {
   printf("Training set size = %d\n",DS.num_instances);
   printf("Testing  set size = %d\n",DS_test.num_instances);
 
-  int num_classifiers = 30;
+  int num_classifiers = 10;
   for(int i=0; i<num_classifiers; i++) {
     C.train_next(DS);
+    C.build_rectangles();
+    C.predict_and_fix(DS_test);
     C.compute_test_error(DS_test);
-    //C.build_rectangles();
     //C.print();
         
   } // End loop over classifiers

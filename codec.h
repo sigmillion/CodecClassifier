@@ -8,6 +8,15 @@
 #include <cmath>
 #include "dataset.h"
 
+class graph_search_metric {
+ public:
+  int dist;
+  unsigned char label;
+  graph_search_metric(int d, unsigned char y) : dist(d), label(y) {}
+  graph_search_metric() : dist(1000000) {}
+  ~graph_search_metric() {}
+};
+
 // Struct for tracking maximum metric (Mutual Information), feature index, and threshold
 class stump {
  public:
@@ -19,7 +28,16 @@ class stump {
   void reset(void) { me = -1e6; f = 0; t = 0; }
 };
 
-typedef std::pair<unsigned char, unsigned char> lims;
+class lims {
+ public:
+  unsigned char lower; // lower limit
+  unsigned char upper; // upper limit
+  int lower_bit; // index of codeword bit
+  int upper_bit; // index of codeword bit
+  lims() {}
+  lims(int l, int u, int bl, int bu) : lower(l), upper(u), lower_bit(bl), upper_bit(bu) {}
+  ~lims() {}
+};
 
 // Class to manage rectangle construction
 class rect {
@@ -27,7 +45,8 @@ class rect {
   std::unordered_map<int, lims> dims; // Dimensions
   void print(void) {
     for(auto & it : dims) {
-      printf("Dim %3d: (%3d,%3d)\n",it.first,it.second.first,it.second.second);
+      printf("Dim %3d: (%3d,%3d) bit low = %d bit high = %d\n",it.first,
+	     it.second.lower,it.second.upper,it.second.lower_bit,it.second.upper_bit);
     }
     printf("================================================\n");
   }
@@ -41,10 +60,10 @@ class rect_stat {
   unsigned char label; // class label
   rect* r; // Rectangle
 
-  rect_stat() : r(NULL) {}
+  rect_stat() : prob(10, 0), r(NULL) {}
   rect_stat(int num) : prob(num, 0), r(NULL) {}
-  ~rect_stat() { if(r != NULL) { delete r; }
-  }
+  ~rect_stat() { if(r != NULL) { delete r; } }
+
   void reset(void) { std::fill(prob.begin(), prob.end(), 0); }
   void print(void) {
     if(r != NULL) {
@@ -410,7 +429,17 @@ class codec {
       // Look up the codeword in the decoder
       auto d = dec.find(c);
       if(d != dec.end()) {
-	//printf("%d =?= %d\n",d->second.label,ds.y[s]);
+#if 0
+	// Sanity test:  Does the given x live in this rectangle?  Yes, this checks out!
+	for(auto dim : d->second.r->dims) {
+	  fprintf(stderr,"[%3d <= %3d <= %3d] ",dim.second.lower,ds.X[xs+dim.first],dim.second.upper);
+	  if(dim.second.lower <= ds.X[xs+dim.first] && ds.X[xs+dim.first] <= dim.second.upper) {
+	    fprintf(stderr,"\n");
+	  } else {
+	    fprintf(stderr,"*\n");
+	  }
+	}
+#endif
 	if(d->second.label != ds.y[s]) {
 	  err++;
 	}
@@ -426,32 +455,173 @@ class codec {
 
   void build_rectangles(void) {
     for(auto & it : dec) { // Loop over the dictionary elements
+      it.second.r = build_rect_from_codeword(it.first); // Make this rect_stat point to this rect
+#if 0
       rect *r = new rect; // Make a new rectangle for each dictionary elememnt
       for(int i=0; i<enc.size(); i++) { // Loop over bits--one for each encoder
 	auto l = r->dims.find(enc[i].f); // Is this feature index in the dims dictionary?
 	if(l == r->dims.end()) { // Dimension does not exist
 	  if(it.first[i]) { // 1 bit
-	    lims q1 = lims(enc[i].t+1, 255); // Make a generic limits pair
+	    lims q1 = lims(enc[i].t+1, 255, i, -1); // Make a generic limits pair
 	    r->dims.insert({enc[i].f,q1});
 	  } else {
-	    lims q0 = lims(0, enc[i].t); // Make a generic limits pair
+	    lims q0 = lims(0, enc[i].t, -1, i); // Make a generic limits pair
 	    r->dims.insert({enc[i].f,q0});
 	  }
 	} else { // Dimension does exist
 	  // Compute the intersection
 	  if(it.first[i]) { // 1 bit
 	    // Lower limit is the maximum of two arguments
-	    l->second.first = l->second.first > enc[i].t+1 ? l->second.first : enc[i].t+1;
+	    if(l->second.lower < enc[i].t+1) {
+	      l->second.lower = enc[i].t+1;
+	      l->second.lower_bit = i; // Save the bit index too
+	    }
 	  } else {
 	    /// Upper limit is the minimum of two arguments
-	    l->second.second = l->second.second < enc[i].t ? l->second.second : enc[i].t;
+	    if(l->second.upper > enc[i].t) {
+	      l->second.upper = enc[i].t;
+	      l->second.upper_bit = i; // Save the bit index too
+	    }
 	  }
 	} // End if dimension exists
       } // End loop over bits
-      it.second.r = r;
+      it.second.r = r; // Make this rect_stat point to this rect
+#endif
     } // End loop over decoder dictionary elements
   } // End build_rectangles function
+
+  rect* build_rect_from_codeword(const codeword & c) {
+    rect* r = new rect; // Make a new rectangle for each dictionary elememnt
+    for(int i=0; i<enc.size(); i++) { // Loop over bits--one for each encoder
+      auto l = r->dims.find(enc[i].f); // Is this feature index in the dims dictionary?
+      if(l == r->dims.end()) { // Dimension does not exist
+	if(c[i]) { // 1 bit
+	  lims q1 = lims(enc[i].t+1, 255, i, -1); // Make a generic limits pair
+	  r->dims.insert({enc[i].f,q1});
+	} else {
+	  lims q0 = lims(0, enc[i].t, -1, i); // Make a generic limits pair
+	  r->dims.insert({enc[i].f,q0});
+	}
+      } else { // Dimension does exist
+	// Compute the intersection
+	if(c[i]) { // 1 bit
+	  // Lower limit is the maximum of two arguments
+	  if(l->second.lower < enc[i].t+1) {
+	    l->second.lower = enc[i].t+1;
+	    l->second.lower_bit = i; // Save the bit index too
+	  }
+	} else {
+	  /// Upper limit is the minimum of two arguments
+	  if(l->second.upper > enc[i].t) {
+	    l->second.upper = enc[i].t;
+	    l->second.upper_bit = i; // Save the bit index too
+	  }
+	}
+      } // End if dimension exists
+    } // End loop over bits
+    return r;
+  } // End build_rectangles function
   
-};
+  // This function does (1) an encoding and (2) a decoding.  If the
+  // codeword is not found in the decoder dictionary, then a depth
+  // first search is initiated.  Searching through the region
+  // adjacency graph continues until a valid rectangle is encountered.
+  // The empty rectangles are labeled and added to the decoder dictionary
+  // during the graph traversal.  This will speed up future predictions.
+  void predict_and_fix(dataset & ds) {
+    // Loop over the dataset
+    for(int s=0, xs=0; s<ds.num_instances; s++, xs+=ds.num_dimensions) {
+      // Classify each feature vector and construct the codeword
+      codeword c = ds.C[s]; // Make a copy of the codeword
+      int i = 0; c.reset();
+      for(auto & e : enc) { if(ds.X[xs+e.f] > e.t) { c[i] = 1; } i++; }
+      std::vector<unsigned char> x(ds.num_dimensions); // Make a vector copy of the feature data
+      for(int i=0; i<ds.num_dimensions; i++) { x[i] = ds.X[xs+i]; }
+
+      graph_search_metric gsm = recursive_graph_search(x,c,0);
+      // ds.y[s] = gsm.label; // Don't do this or else you get zero error rate.
+    }
+  } // End of compute_test_error function
+
+  graph_search_metric recursive_graph_search(std::vector<unsigned char> & x, codeword & c, int dist) {
+    //===============================================
+    // Look up the codeword in the decoder and return label if found
+    auto d = dec.find(c);
+    if(d != dec.end()) { // Found it in the dictionary
+      return graph_search_metric(dist,d->second.label); // Return the label
+    }
+    //===============================================
+    // Did not find the codeword
+    fprintf(stderr,"Miss ... \n");
+
+    // Codeword check
+    codeword ctmp;
+    int i = 0;
+    for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
+    fprintf(stderr,">>%s\n",ctmp.to_string().c_str());
+    fprintf(stderr,">>%s\n",c.to_string().c_str());
+    
+    // 1. Build rect_stat and rect structures
+    rect_stat rs;
+    auto it = dec.insert({c,rs});
+    it.first->second.r = build_rect_from_codeword(c); // Put this pointer into the rect_stat in the dictionary
+                                                // so that it doesn't get deleted when rs is deconstructed
+                                                // when this function terminates.
+
+    // 2. Begin depth-first search of region adjacency graph
+    // using rectangles and codewords
+    graph_search_metric bestgsm, gsm;
+    for(auto & l : it.first->second.r->dims) { // Loop over the limits
+      // l is a dimension for the rectangle currently in
+      if(l.second.lower_bit != -1) { // Valid lower limit
+	unsigned char xold = x[l.second.lower_bit];
+	x[l.second.lower_bit] = l.second.lower - 1; // -1 to step into next rectangle below
+	c[l.second.lower_bit] = !c[l.second.lower_bit]; // Flip the bit
+	int dist_increment = xold - x[l.second.lower_bit];
+	//***
+	ctmp.reset(); i = 0;
+    for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
+    fprintf(stderr,"%2d %3d||%s\n",l.second.lower_bit,i,ctmp.to_string().c_str());
+    fprintf(stderr,"      ||%s\n",c.to_string().c_str());
+        //***
+        fprintf(stderr,"lower %d + %d\n",dist,dist_increment);
+	gsm = recursive_graph_search(x,c, dist+dist_increment);
+	c[l.second.lower_bit] = !c[l.second.lower_bit]; // Flip the bit back to the way it was
+	x[l.second.lower_bit] = xold; // Put x back the way it was
+	if(gsm.dist < bestgsm.dist) {
+	  bestgsm = gsm;
+	}
+      }
+      if(l.second.upper_bit != -1) { // Valid upper limit
+	unsigned char xold = x[l.second.upper_bit];
+	x[l.second.upper_bit] = l.second.upper + 1; // +1 to step into the next rectangle above
+	c[l.second.upper_bit] = !c[l.second.upper_bit]; // Flip the bit
+	int dist_increment = x[l.second.upper_bit] - xold;
+	//***
+	ctmp.reset(); i = 0;
+    for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
+    fprintf(stderr,"%2d %3d~~%s\n",l.second.upper_bit,i,ctmp.to_string().c_str());
+    fprintf(stderr,"      ~~%s\n",c.to_string().c_str());
+        //***
+	fprintf(stderr,"upper %d + %d\n",dist,dist_increment);
+	gsm = recursive_graph_search(x,c, dist+dist_increment);
+	c[l.second.upper_bit] = !c[l.second.upper_bit]; // Flip the bit back
+	x[l.second.upper_bit] = xold; // Pub x back the way it was
+	if(gsm.dist < bestgsm.dist) {
+	  bestgsm = gsm;
+	}
+      }
+    }
+    // 3. Set the label
+    fprintf(stderr,"distance %d\n",gsm.dist);
+    //rs.label = bestgsm.label; // Set the label in this rect_stat
+    // 4. Add rect_stat to the decoder dictionary
+    //dec.insert({c,rs});
+    it.first->second.label = bestgsm.label;
+
+    return bestgsm;
+  } // End recursive_graph_search function
+
+}; // End codec class definition
 
 #endif

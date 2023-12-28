@@ -55,10 +55,26 @@ class dataset {
   
   dataset() { init(); }
 
-  dataset(const char* datafile, const char* labelfile, int num_instances_to_load=10000) {
+  dataset(dataset & ds, int i) :
+    X(ds.X+i*ds.num_dimensions),
+    y(ds.y+i),
+    C(ds.C+i),
+    Xyi(NULL),
+    num_classes(ds.num_classes),
+      num_instances(1),
+    num_dimensions(ds.num_dimensions),
+    num_splits(ds.num_splits) {}
+
+  void set(dataset & ds, int i) {
+    X = ds.X+i*ds.num_dimensions;
+    y = ds.y+i;
+    C = ds.C+i;
+   }
+
+  dataset(const char* datafile, const char* labelfile, int num_instances_to_load, int num_instances_to_skip=0) {
     init(); // Set up all the initial parameters
-    load_features_decimated(datafile, num_instances_to_load);
-    load_labels_decimated(labelfile, num_instances_to_load);
+    load_features_decimated(datafile, num_instances_to_load, num_instances_to_skip);
+    load_labels_decimated(labelfile, num_instances_to_load, num_instances_to_skip);
   }
   
   ~dataset() {
@@ -77,37 +93,37 @@ class dataset {
     qsort(Xyi,num_instances,sizeof(dimdata),comp);
   }
   
-  void load_features(const char *filename, int num_instances_to_load=10000) {
+  void load_features(const char *filename, int num_instances_to_load) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
-      return;
+      exit(0);
     }
     // Skip over the header
     unsigned char *dump = new unsigned char[16];
     size_t num = fread(dump,sizeof(unsigned char),16,fid);
 
     // Allocate memory
-    num_instances = num_instances_to_load;
-    X = new unsigned char[num_instances * num_dimensions];
-    Xyi = new dimdata[num_instances];
-    C = new codeword [num_instances];
+    X = new unsigned char[num_instances_to_load * num_dimensions];
+    Xyi = new dimdata[num_instances_to_load];
+    C = new codeword [num_instances_to_load];
     
     // Read
-    num = fread(X,sizeof(unsigned char),num_instances * num_dimensions,fid);
-    if(num < num_instances_to_load) {
+    num = fread(X,sizeof(unsigned char),num_instances_to_load * num_dimensions,fid);
+    if(num < num_instances_to_load * num_dimensions) {
       fprintf(stderr,"ERROR: Requested %d, received %lu.\n",
 	      num_instances_to_load, num);
+      exit(0);
     }
+    num_instances = num_instances_to_load;
     fclose(fid);
   }
 
-  void load_features_decimated(const char *filename, int num_instances_to_load=10000) {
-    
+  void load_features_decimated(const char *filename, int num_instances_to_load, int num_instances_to_skip) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
-      return;
+      exit(0);
     }
     // Skip over the header
     unsigned char *dump = new unsigned char[16];
@@ -116,61 +132,65 @@ class dataset {
     // Allocate memory
     // Set up for loading a decimated data set as is done in Matlab
     // so that I can compare these results to the Matlab results.
-    num_instances = num_instances_to_load;
-    int num_skip = 10000/num_instances - 1;
-    X = new unsigned char[num_instances * num_dimensions];
-    Xyi = new dimdata[num_instances];
-    C = new codeword[num_instances];
+    X = new unsigned char[num_instances_to_load * num_dimensions];
+    Xyi = new dimdata[num_instances_to_load];
+    C = new codeword[num_instances_to_load];
     
     // Read
-    for(int i=0; i<num_instances; i++) {
+    num_instances = 0;
+    for(int i=0; i<num_instances_to_load; i++) {
       num = fread(X+i*num_dimensions,sizeof(unsigned char),num_dimensions,fid);
       if(num < num_dimensions) {
 	fprintf(stderr,"ERROR: Requested %d, received %lu.\n",
 		num_dimensions, num);
+	exit(0);
       }
-      fseek(fid,sizeof(unsigned char)*num_dimensions*num_skip,SEEK_CUR);
+      fseek(fid,sizeof(unsigned char)*num_dimensions*num_instances_to_skip,SEEK_CUR);
+      num_instances++;
     }
     fclose(fid);
+    if(num_instances != num_instances_to_load) {
+      fprintf(stderr,"ERROR: Did not load the right number of instances.  Requested %d and received %d.\n",
+	      num_instances_to_load, num_instances);
+      exit(0);
+    }
   }
 
-  void load_labels(const char *filename, int num_instances_to_load=10000) {
+  void load_labels(const char *filename, int num_instances_to_load) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
-      return;
+      exit(0);
     }
     // Skip over the header
     unsigned char *dump = new unsigned char[8];
     size_t num = fread(dump,sizeof(unsigned char),8,fid);
 
     // Allocate memory
-    num_instances = num_instances_to_load;
-    y = new unsigned char[num_instances];
+    y = new unsigned char[num_instances_to_load];
 
     // Read
-    num = fread(y,sizeof(unsigned char),num_instances,fid);
+    num = fread(y,sizeof(unsigned char),num_instances_to_load,fid);
     if(num < num_instances) {
       fprintf(stderr,"ERROR: Requested %d, received %lu.\n",
 	      num_instances_to_load, num);
+      exit(0);
     }
     fclose(fid);
   }
 
-  void load_labels_decimated(const char *filename, int num_instances_to_load=10000) {
+  void load_labels_decimated(const char *filename, int num_instances_to_load, int num_instances_to_skip) {
     FILE *fid = fopen(filename,"rb");
     if(fid == NULL) {
       fprintf(stderr,"ERROR: %s cannot be opened.\n",filename);
-      return;
+      exit(0);
     }
     // Skip over the header
     unsigned char *dump = new unsigned char[8];
     size_t num = fread(dump,sizeof(unsigned char),8,fid);
 
     // Allocate memory
-    num_instances = num_instances_to_load;
-    int num_skip = 10000/num_instances - 1;
-    y = new unsigned char[num_instances];
+    y = new unsigned char[num_instances_to_load];
 
     // Read
     for(int i=0; i<num_instances; i++) {
@@ -178,8 +198,9 @@ class dataset {
       if(num < 1) {
 	fprintf(stderr,"ERROR: Requested %d, received %lu.\n",
 		num_instances_to_load, num);
+	exit(0);
       }
-      fseek(fid,sizeof(unsigned char)*num_skip,SEEK_CUR);
+      fseek(fid,sizeof(unsigned char)*num_instances_to_skip,SEEK_CUR);
     }
     fclose(fid);
   }
