@@ -21,15 +21,32 @@ int main(int argc, char *argv[]) {
   printf("Training set size = %d\n",DS.num_instances);
   printf("Testing  set size = %d\n",DS_test.num_instances);
 
+#if 1
   int num_classifiers = 10;
   for(int i=0; i<num_classifiers; i++) {
     C.train_next(DS);
+    C.compute_test_error(DS_test);
     C.build_rectangles();
     C.predict_and_fix(DS_test);
     C.compute_test_error(DS_test);
     //C.print();
+    //C.save("model.dat");
+    
+    //codec D(DS.num_classes);
+    //D.load("model.dat");
+    //D.print();
+    //D.compute_test_error(DS_test);
         
   } // End loop over classifiers
-  
+  //C.save("model.dat");
+#endif
+#if 0
+  C.load("model.dat");
+  C.build_rectangles();
+  C.testcode();
+  //C.enc.pop_back();
+  //C.train_next(DS);
+  //C.compute_test_error(DS_test);
+#endif
   return 0;
 }

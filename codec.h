@@ -106,7 +106,7 @@ class codec {
     }
   }
   
-  void save(char* filename, int num) {
+  void save(const char* filename) {
     FILE* fid = fopen(filename,"wb");
     // Write out encoder parameters
     int num_classifiers = enc.size();
@@ -117,16 +117,20 @@ class codec {
       fwrite(&(enc[i].me),sizeof(enc[i].me),1,fid); // Errors
     }
     // Write out decoder parameters
-    int num_bits = dec.size();
+    int num_bits = enc.size();
     fwrite(&num_bits,sizeof(num_bits),1,fid); // Number of bits in the codeword
-    num = dec.size(); // Size of dictionary
+    int num = dec.size(); // Size of dictionary
     fwrite(&num,sizeof(num),1,fid); // Size of dictionary
     for(auto & it : dec) {
-      std::string cs = it.first.to_string(); // String version of codeword
-      if(cs.size() != num_classifiers) {
-	fprintf(stderr,"Houston, we have a problem with codeword strings. %lu %d\n",cs.length(),num_classifiers);
+      for(int i=0; i<num_bits; i++) {
+	if(it.first[i]) {
+	  char a = '1';
+	  fwrite(&a,sizeof(a),1,fid);
+	} else {
+	  char a = '0';
+	  fwrite(&a,sizeof(a),1,fid);
+	}
       }
-      fwrite(cs.c_str(),sizeof(char),num_classifiers,fid);
       num = num_classes; // Number of classes = size of probability array
       fwrite(&num,sizeof(num),1,fid); // Size probability array
       fwrite(it.second.prob.data(),sizeof(int),num_classes,fid); // Probability array
@@ -138,7 +142,7 @@ class codec {
     fclose(fid);
   } // End of save function
 
-  void load(char* filename) {
+  void load(const char* filename) {
     // This function assumes that the data structure is starting out "fresh",
     // and that no clearing of data structures is needed.  This function
     // goes directly and loads and fills an empty (assumption) data structure.
@@ -146,26 +150,25 @@ class codec {
     // Read in encoder parameters
     int num_classifiers;
     fread(&num_classifiers,sizeof(num_classifiers),1,fid); // Number of classifiers in container
-    enc.resize(num_classifiers);
+    //enc.resize(num_classifiers);
     for(int i=0; i<num_classifiers; i++) {
       stump s;
       fread(&(s.f),sizeof(s.f),1,fid);
       fread(&(s.t),sizeof(s.t),1,fid);
       fread(&(s.me),sizeof(s.me),1,fid);
+      enc.push_back(s);
     }
     
     // Read in decoder parameters
     int num_bits, num;
     fread(&num_bits,sizeof(num_bits),1,fid); // Number of bits in the codeword
-    char* cs = new char [num_bits]; // Allocate codeword string
     fread(&num,sizeof(num),1,fid); // Size of dictionary
     for(int i=0; i<num; i++) {
-      fread(cs,sizeof(char),num_bits,fid);
       codeword c; // Initialized to all zero bits
+      char a;
       for(int j=0; j<num_bits; j++) {
-	if(cs[j] == '1') {
-	  c[j] = 1; // Set the appropriate bits to 1
-	}
+	fread(&a,sizeof(a),1,fid);
+	if(a == '1') { c.set(j); }
       }
       fread(&num_classes,sizeof(num_classes),1,fid); // Size of probability array
       rect_stat r(num_classes);
@@ -176,7 +179,6 @@ class codec {
       // Add this rect to decoder dictionary
       dec.insert({c,r});
     }
-    delete [] cs;
     fclose(fid);
   } // End of load function
   
@@ -422,7 +424,8 @@ class codec {
     // Loop over the dataset
     for(int s=0, xs=0; s<ds.num_instances; s++, xs+=ds.num_dimensions) {
       // Classify each feature vector and construct the codeword
-      codeword c;
+      //codeword c;
+      codeword & c = ds.C[s];
       int i = 0;
       for(auto & e : enc) { if(ds.X[xs+e.f] > e.t) { c[i] = 1; } i++; }
 
@@ -445,6 +448,14 @@ class codec {
 	}
       } else {
 	miss++;
+#if 0
+    // Write out the data
+    FILE* fid = fopen("x_data.dat","ab");
+    unsigned char* xd = ds.X+xs;
+    int xlen = ds.num_dimensions;
+    fwrite(xd,sizeof(unsigned char),xlen,fid);
+    fclose(fid);
+#endif
       }
     }
     double err_rate = ((double)err) / ds.num_instances;
@@ -541,6 +552,7 @@ class codec {
       graph_search_metric gsm = recursive_graph_search(x,c,0);
       // ds.y[s] = gsm.label; // Don't do this or else you get zero error rate.
     }
+    printf("Dictionary size == %lu\n",dec.size());
   } // End of compute_test_error function
 
   graph_search_metric recursive_graph_search(std::vector<unsigned char> & x, codeword & c, int dist) {
@@ -552,14 +564,14 @@ class codec {
     }
     //===============================================
     // Did not find the codeword
-    fprintf(stderr,"Miss ... \n");
+    //fprintf(stderr,"Miss ... \n");
 
     // Codeword check
-    codeword ctmp;
-    int i = 0;
-    for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
-    fprintf(stderr,">>%s\n",ctmp.to_string().c_str());
-    fprintf(stderr,">>%s\n",c.to_string().c_str());
+    //codeword ctmp;
+    //int i = 0;
+    //for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
+    //fprintf(stderr,">>%s\n",ctmp.to_string().c_str());
+    //fprintf(stderr,">>%s\n",c.to_string().c_str());
     
     // 1. Build rect_stat and rect structures
     rect_stat rs;
@@ -568,52 +580,58 @@ class codec {
                                                 // so that it doesn't get deleted when rs is deconstructed
                                                 // when this function terminates.
 
+    //for(auto & d : it.first->second.r->dims) {
+    //  fprintf(stderr,"dim %3d (%3d) [%3d <= %3d <= %3d] (%3d)\n",
+    //  d.first, d.second.lower_bit, d.second.lower, x[d.first], d.second.upper,
+    //  d.second.upper_bit);
+    //}
+    
     // 2. Begin depth-first search of region adjacency graph
     // using rectangles and codewords
     graph_search_metric bestgsm, gsm;
     for(auto & l : it.first->second.r->dims) { // Loop over the limits
       // l is a dimension for the rectangle currently in
       if(l.second.lower_bit != -1) { // Valid lower limit
-	unsigned char xold = x[l.second.lower_bit];
-	x[l.second.lower_bit] = l.second.lower - 1; // -1 to step into next rectangle below
+	unsigned char xold = x[l.first];
+	x[l.first] = l.second.lower - 1; // -1 to step into next rectangle below
 	c[l.second.lower_bit] = !c[l.second.lower_bit]; // Flip the bit
-	int dist_increment = xold - x[l.second.lower_bit];
-	//***
-	ctmp.reset(); i = 0;
-    for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
-    fprintf(stderr,"%2d %3d||%s\n",l.second.lower_bit,i,ctmp.to_string().c_str());
-    fprintf(stderr,"      ||%s\n",c.to_string().c_str());
+	int dist_increment = xold - x[l.first];
+	//*** The codeword and x don't match at this point!!!!
+	//ctmp.reset(); i = 0;
+	//for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
+	//fprintf(stderr,"%2d %3d||%s\n",l.second.lower_bit,i,ctmp.to_string().c_str());
+	//fprintf(stderr,"      ||%s\n",c.to_string().c_str());
+        //fprintf(stderr,"lower %d + %d\n",dist,dist_increment);
         //***
-        fprintf(stderr,"lower %d + %d\n",dist,dist_increment);
 	gsm = recursive_graph_search(x,c, dist+dist_increment);
 	c[l.second.lower_bit] = !c[l.second.lower_bit]; // Flip the bit back to the way it was
-	x[l.second.lower_bit] = xold; // Put x back the way it was
+	x[l.first] = xold; // Put x back the way it was
 	if(gsm.dist < bestgsm.dist) {
 	  bestgsm = gsm;
 	}
       }
       if(l.second.upper_bit != -1) { // Valid upper limit
-	unsigned char xold = x[l.second.upper_bit];
-	x[l.second.upper_bit] = l.second.upper + 1; // +1 to step into the next rectangle above
+	unsigned char xold = x[l.first];
+	x[l.first] = l.second.upper + 1; // +1 to step into the next rectangle above
 	c[l.second.upper_bit] = !c[l.second.upper_bit]; // Flip the bit
-	int dist_increment = x[l.second.upper_bit] - xold;
+	int dist_increment = x[l.first] - xold;
 	//***
-	ctmp.reset(); i = 0;
-    for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
-    fprintf(stderr,"%2d %3d~~%s\n",l.second.upper_bit,i,ctmp.to_string().c_str());
-    fprintf(stderr,"      ~~%s\n",c.to_string().c_str());
+	//ctmp.reset(); i = 0;
+	//for(auto & e : enc) { if(x[e.f] > e.t) { ctmp[i] = 1; } i++; }
+	//fprintf(stderr,"%2d %3d~~%s\n",l.second.upper_bit,i,ctmp.to_string().c_str());
+	//fprintf(stderr,"      ~~%s\n",c.to_string().c_str());
+	//fprintf(stderr,"upper %d + %d\n",dist,dist_increment);
         //***
-	fprintf(stderr,"upper %d + %d\n",dist,dist_increment);
 	gsm = recursive_graph_search(x,c, dist+dist_increment);
 	c[l.second.upper_bit] = !c[l.second.upper_bit]; // Flip the bit back
-	x[l.second.upper_bit] = xold; // Pub x back the way it was
+	x[l.first] = xold; // Pub x back the way it was
 	if(gsm.dist < bestgsm.dist) {
 	  bestgsm = gsm;
 	}
       }
     }
     // 3. Set the label
-    fprintf(stderr,"distance %d\n",gsm.dist);
+    //fprintf(stderr,"distance %d\n",gsm.dist);
     //rs.label = bestgsm.label; // Set the label in this rect_stat
     // 4. Add rect_stat to the decoder dictionary
     //dec.insert({c,rs});
@@ -622,6 +640,43 @@ class codec {
     return bestgsm;
   } // End recursive_graph_search function
 
+  void testcode(void) {
+    int num_data = 16;
+    int num_dimensions = 784;
+    FILE* fid = fopen("x_data.dat","rb");
+    unsigned char* x = new unsigned char [num_data * num_dimensions];
+    fread(x,sizeof(unsigned char),num_data * num_dimensions,fid);
+    fclose(fid);
+
+    unsigned char* xp=x;
+    for(int j=0; j<1 /*num_data*/; j++, xp+=num_dimensions) {
+      // Compute the codeword
+      codeword c;
+      int i = 0;
+      for(auto & e : enc) { c.set(i,x[e.f] > e.t); i++; }
+      fprintf(stderr,">>%s\n",c.to_string().c_str());
+      std::vector<unsigned char> xv(num_dimensions);
+      for(i=0; i<num_dimensions; i++) { xv[i] = x[i]; }
+      graph_search_metric gsm = recursive_graph_search(xv,c,0);
+    }
+#if 0      
+      // Get the dictionary element for this codeword
+      auto it = dec.find(c);
+      if(it != dec.end()) {
+      } else {
+	// Print the rectangle
+	for(auto & d : it->second.r->dims) {
+	  fprintf(stderr,"dim %3d (%3d) [%3d <= %3d <= %3d] (%3d)\n",
+		  d.first, d.second.lower_bit, d.second.lower, xp[d.first], d.second.upper,
+		  d.second.upper_bit);
+	}
+      }
+    }
+#endif
+    
+    delete [] x;
+  }
+  
 }; // End codec class definition
 
 #endif
