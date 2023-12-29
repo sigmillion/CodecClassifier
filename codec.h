@@ -6,7 +6,21 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <ctime>
+#include <random>
 #include "dataset.h"
+
+class myrand {
+ public:
+  std::mt19937 mt;
+  myrand() : mt(time(NULL)) {}
+  myrand(int seed) : mt(seed) {}
+  ~myrand() {}
+  int rand(int themax) {
+    // Generates random numbers between 0, 1, 2, ..., themax-1
+    return (mt() % themax);
+  }
+};
 
 class graph_search_metric {
  public:
@@ -418,6 +432,17 @@ class codec {
     return ((double)err) / ds.num_instances;
   } // End of compute_error function
 
+  void set_codewords(dataset & ds) {
+    // Loop over the dataset
+    for(int s=0, xs=0; s<ds.num_instances; s++, xs+=ds.num_dimensions) {
+      // Classify each feature vector and construct the codeword
+      //codeword c;
+      codeword & c = ds.C[s];
+      int i = 0;
+      for(auto & e : enc) { if(ds.X[xs+e.f] > e.t) { c[i] = 1; } i++; }
+    }    
+  }
+  
   double compute_test_error(dataset & ds) {
     int err = 0;
     int miss = 0;
@@ -671,12 +696,11 @@ class codec {
 		  d.second.upper_bit);
 	}
       }
-    }
 #endif
     
     delete [] x;
   }
-  
+
 }; // End codec class definition
 
 #endif
