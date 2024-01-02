@@ -22,6 +22,29 @@ int main(int argc, char *argv[]) {
   printf("Testing  set size = %d\n",DS_test.num_instances);
 
 #if 1
+  int num_classifiers = 30;
+  std::vector<double> train_error(num_classifiers);
+  std::vector<double> test_error(num_classifiers);
+  std::vector<double> new_test_error(num_classifiers);
+  std::vector<double> miss_error(num_classifiers);
+  double miss_rate;
+  for(int i=0; i<num_classifiers; i++) {
+    char filename[100];
+    sprintf(filename,"training_60k_%03d.model",i);
+    C.load(filename);
+    C.set_codewords(DS);
+    train_error[i] = C.compute_train_error(DS);
+    test_error[i] = C.compute_test_error(DS_test,&miss_rate);
+    miss_error[i] = miss_rate;
+    //C.build_rectangles();
+    //C.predict_and_fix(DS_test);
+    //new_test_error[i] = C.compute_test_error(DS_test,&miss_rate);
+    printf("%3d: %f, %f, %f, %f, %f\n",i,train_error[i],test_error[i],miss_error[i],
+	   new_test_error[i],miss_rate);
+  }
+#endif
+  
+#if 0
     C.load("training_60k_028.model");
     C.set_codewords(DS); // Have to do this after loading a new model before training next
                          // because the codewords are needed to extend the existing model

@@ -443,7 +443,7 @@ class codec {
     }    
   }
   
-  double compute_test_error(dataset & ds) {
+  double compute_test_error(dataset & ds, double* pmiss_rate=NULL) {
     int err = 0;
     int miss = 0;
     // Loop over the dataset
@@ -486,6 +486,9 @@ class codec {
     double err_rate = ((double)err) / ds.num_instances;
     double miss_rate = ((double)miss) / ds.num_instances;
     printf("Test error rate = %f, \tmiss rate = %f\n",err_rate,miss_rate);
+    if(pmiss_rate != NULL) {
+      *pmiss_rate = miss_rate;
+    }
     return err_rate;
   } // End of compute_test_error function
 
