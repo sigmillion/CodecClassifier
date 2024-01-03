@@ -71,11 +71,11 @@ class rect_stat {
  public:
   std::vector<int> prob; // number of points from each class
   int num; // total number of points
-  unsigned char label; // class label
+  unsigned char label; // class label, value of 255 means unassigned
   rect* r; // Rectangle
 
-  rect_stat() : prob(10, 0), r(NULL) {}
-  rect_stat(int num) : prob(num, 0), r(NULL) {}
+  rect_stat() : prob(10, 0), r(NULL), label(255) {}
+  rect_stat(int num) : prob(num, 0), r(NULL), label(255) {}
   ~rect_stat() { if(r != NULL) { delete r; } }
 
   void reset(void) { std::fill(prob.begin(), prob.end(), 0); }
@@ -588,6 +588,10 @@ class codec {
     // Look up the codeword in the decoder and return label if found
     auto d = dec.find(c);
     if(d != dec.end()) { // Found it in the dictionary
+        if(d->second.label == 255) {
+            std::string strng(c.to_string());
+            fprintf(stderr,"Returning %s\n",strng.c_str());
+        }
       return graph_search_metric(dist,d->second.label); // Return the label
     }
     //===============================================
@@ -634,7 +638,7 @@ class codec {
 	gsm = recursive_graph_search(x,c, dist+dist_increment);
 	c[l.second.lower_bit] = !c[l.second.lower_bit]; // Flip the bit back to the way it was
 	x[l.first] = xold; // Put x back the way it was
-	if(gsm.dist < bestgsm.dist) {
+	if(gsm.label < 255 && gsm.dist < bestgsm.dist) {
 	  bestgsm = gsm;
 	}
       }
@@ -653,7 +657,7 @@ class codec {
 	gsm = recursive_graph_search(x,c, dist+dist_increment);
 	c[l.second.upper_bit] = !c[l.second.upper_bit]; // Flip the bit back
 	x[l.first] = xold; // Pub x back the way it was
-	if(gsm.dist < bestgsm.dist) {
+	if(gsm.label < 255 && gsm.dist < bestgsm.dist) {
 	  bestgsm = gsm;
 	}
       }

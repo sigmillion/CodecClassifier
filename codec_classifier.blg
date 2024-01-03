@@ -1,0 +1,9 @@
+[0] Config.pm:354> INFO - This is Biber 2.7
+[0] Config.pm:357> INFO - Logfile is 'codec_classifier.blg'
+[32] biber-darwin:303> INFO - === Wed Nov 22, 2023, 12:04:17
+[183] Biber.pm:359> INFO - Reading 'codec_classifier.bcf'
+[255] Biber.pm:835> INFO - Found 0 citekeys in bib section 0
+[262] Utils.pm:164> WARN - The file 'codec_classifier.bcf' does not contain any citations!
+[268] bbl.pm:608> INFO - Writing 'codec_classifier.bbl' with encoding 'UTF-8'
+[269] bbl.pm:712> INFO - Output to codec_classifier.bbl
+[269] Biber.pm:109> INFO - WARNINGS: 1

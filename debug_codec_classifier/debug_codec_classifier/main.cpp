@@ -1,11 +1,11 @@
-#include "dataset.h"
-#include "codec.h"
+#include "../../dataset.h"
+#include "../../codec.h"
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {
   // Instantiate a dataset and load the data
   dataset DS("/Users/Jake/Downloads/MNIST_ORG/train-images.idx3-ubyte",
-	     "/Users/Jake/Downloads/MNIST_ORG/train-labels.idx1-ubyte",60000); // Load decimated
+         "/Users/Jake/Downloads/MNIST_ORG/train-labels.idx1-ubyte",60000); // Load decimated
   //dataset DS_test("/Users/Jake/Downloads/MNIST_ORG/train-images.idx3-ubyte",
   //"/Users/Jake/Downloads/MNIST_ORG/train-labels.idx1-ubyte",60000); // Load everything
   //dataset DS("/Users/Jake/Downloads/MNIST_ORG/train-images.idx3-ubyte",
@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   //dataset DS("/Users/Jake/Downloads/MNIST_ORG/t10k-images.idx3-ubyte",
   //"/Users/Jake/Downloads/MNIST_ORG/t10k-labels.idx1-ubyte",10000); // Load everything
   dataset DS_test("/Users/Jake/Downloads/MNIST_ORG/t10k-images.idx3-ubyte",
-		  "/Users/Jake/Downloads/MNIST_ORG/t10k-labels.idx1-ubyte",10000); // Load everything
+          "/Users/Jake/Downloads/MNIST_ORG/t10k-labels.idx1-ubyte",10000); // Load everything
   //C.train_batch(DS,30);
 
   // Print dataset sizes
@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
   double miss_rate;
   for(int i=0; i<num_classifiers; i++) {
     codec C(DS.num_classes); // Instantiate a codec classifier with 30 base classifiers
-    char filename[100];
-    sprintf(filename,"training_60k_%03d.model",i);
+    char filename[200];
+    sprintf(filename,"/Users/Jake/Projects/CodecClassifier/training_60k_%03d.model",i);
     C.load(filename);
     C.set_codewords(DS);
     train_error[i] = C.compute_train_error(DS);
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     C.predict_and_fix(DS_test);
     new_test_error[i] = C.compute_test_error(DS_test,&miss_rate);
     printf("%3d: %f, %f, %f, %f, %f\n",i,train_error[i],test_error[i],miss_error[i],
-	   new_test_error[i],miss_rate);
+       new_test_error[i],miss_rate);
   }
 #endif
   

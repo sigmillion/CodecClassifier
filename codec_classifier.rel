@@ -1,0 +1,28 @@
+;; RefTeX parse info file
+;; File: /Users/Jake/Projects/CodecClassifier/codec_classifier.tex
+;; User: Jake (Jake Gunther)
+
+(set reftex-docstruct-symbol '(
+
+
+(xr nil "\\\\\\\\\\\\")
+
+(index-tags)
+
+(is-multi nil)
+
+(bibview-cache)
+
+(master-dir . "/Users/Jake/Projects/CodecClassifier/")
+
+(label-numbers)
+
+(bof "/Users/Jake/Projects/CodecClassifier/codec_classifier.tex")
+
+("fig:arch" "f" "Structure of the codec classifier." "/Users/Jake/Projects/CodecClassifier/codec_classifier.tex" nil)
+
+(toc "toc" "    1 Metrics: Bayes Error" "/Users/Jake/Projects/CodecClassifier/codec_classifier.tex" nil 2 "1" "\\section{Metrics: Bayes Error}" 10796)
+
+(eof "/Users/Jake/Projects/CodecClassifier/codec_classifier.tex")
+))
+
