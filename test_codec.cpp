@@ -45,10 +45,10 @@ int main(int argc, char *argv[]) {
 #endif
   
 #if 0
-    C.load("training_60k_028.model");
-    C.set_codewords(DS); // Have to do this after loading a new model before training next
-                         // because the codewords are needed to extend the existing model
-                         // and train the new classifier.  When doing batch processing,
+  C.load("training_60k_028.model");
+  C.set_codewords(DS); // Have to do this after loading a new model before training next
+  // because the codewords are needed to extend the existing model
+  // and train the new classifier.  When doing batch processing,
 
   
   int num_classifiers = 30;
